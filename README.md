@@ -6,6 +6,7 @@ Sivu näyttää:
 
 - Nykyhetken aallonkorkeuden ja -jaksonpituuden **oikeasta poijuhavainnosta** (Aaltopoiju.fi), suuntanuolella + 4h historia (5 havaintoikkunaa)
 - Ennusteen (Open-Meteo Marine + Forecast API) aallonkorkeudelle, -jaksolle, tuulelle ja merivedenkorkeudelle
+- Ihan perus 3 vuorokauden sääennusteen (säätila ikonilla: aurinkoinen/puolipilvinen/pilvinen/sade/lumi/ukkonen + ylin/alin lämpötila), merivedenkorkeuden jälkeen
 - Selkeän hyvä/välttävä/huono-luokituksen väreillä (vihreä/keltainen/punainen) ja jatkuvan mukavuusindeksin (näkyy värillisessä pallossa), jotka ottavat huomioon Almejónin mitat ja painon (LWL 7,3 m, LOA 8,37 m, leveys 2,83 m, n. 2500 kg, puoliliukuva runko)
 - Tuulen nopeuden ja suunnan samoissa laatikoissa aaltotietojen kanssa (nyt-tilanne + jokaisessa tuntiennustelaatikossa pieni tuuli-ikoni)
 - Seuraavat tunnit tuntikohtaisina "chippeinä"
@@ -32,6 +33,7 @@ Kaikki säädöt ovat `index.html`:n `<script>`-osiossa:
   Indeksi < 1,0 = Hyvä, 1,0–2,0 = Välttävä, > 2,0 = Huono. Täysi kaava, laskuesimerkit ja Comfort Ratio -perustelut ovat sivulla avattavassa "Miten hyvä/välttävä/huono-indeksi lasketaan?" -osiossa.
 - `LOCATIONS` — koordinaatit ja nimet kahdelle alueelle. Näyttöjärjestys (rannikko ennen avomerta) määräytyy `loadAll()`-funktion `renderLocationCard(...)`-kutsujen järjestyksestä, ei `LOCATIONS`-objektista.
 - Poijujen URL:t ja asematarkistukset ovat `scripts/fetch_buoy.py`:ssä (`STATIONS`-sanakirja).
+- `WEATHER_CODES` — WMO-säätilakoodien (Open-Meteon `weather_code`) käännökset suomeksi + ikoni 3 vrk:n sääkortille. Haetaan Rannikko-sijainnin (Suomenlinna) koordinaateista, koska ilman lämpötila/pilvisyys ei juuri eroa alueiden välillä.
 - "↻ Päivitä nyt" -nappi ei vain piirrä samaa dataa uudelleen: se hakee poijudatan uudelleen (`data/buoy.json`, cache-buster-parametrilla) ja tekee Open-Meteo-ennusteista uudet HTTP-pyynnöt (`&_=Date.now()`-parametri estää selaimen välimuistin) — eli tarkistaa aidosti onko ennuste päivittynyt. Sama tapahtuu automaattisesti 10 min välein.
 
 ## Tietolähteet
@@ -46,3 +48,4 @@ Kaikki säädöt ovat `index.html`:n `<script>`-osiossa:
 
 - "Suomenlahti (avomeri)" -poijun tarkkaa WGS84-koordinaattia ei ole julkisesti dokumentoitu aaltopoiju.fi:llä — käytetty sijainti (59.973, 25.602, Kalbådagrundin lähellä) on paras arvio ja vaikuttaa vain siihen, miltä pisteeltä Open-Meteo-ennuste haetaan, ei poijuhavaintoon itseensä.
 - Itämerellä ei ole merkittävää vuorovesivaihtelua — merivedenkorkeus-osio linkittää Ilmatieteen laitoksen sivulle, koska paikallinen sääolosuhteiden (ilmanpaine, tuuli) aiheuttama vaihtelu voi silti olla merkittävää.
+- **GitHub Actionsin `schedule`-ajastus on epäluotettava**: `update-buoy.yml` on ajastettu 30 min välein, mutta havaittu käytännössä, että ajastettu ajo ei ole käynnistynyt kertaakaan itsestään usean tunnin aikana (vain manuaaliset "Run workflow" -ajot ovat toimineet). Tämä on GitHubin dokumentoitu, tunnettu rajoitus matalan aktiviteetin repoissa - ajastus on "best effort" eikä sillä ole SLA:ta. Jos poijudata näyttää usein liian vanhalta, käy käynnistämässä ajo manuaalisesti (Actions → "Päivitä aaltopoijudata" → "Run workflow"), tai harkitse ulkopuolista cron-palvelua (esim. cron-job.org), joka kutsuu GitHubin API:a `workflow_dispatch`-tapahtumalla luotettavammin.

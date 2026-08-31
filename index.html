@@ -73,6 +73,13 @@
   .windnow .arrow{font-size:1rem}
 
   .days{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+  .wdays{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .wday{border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center}
+  .wday .d{font-size:.72rem;color:var(--muted);font-weight:600}
+  .wday .icon{font-size:1.5rem;margin:4px 0 2px}
+  .wday .label{font-size:.66rem;color:var(--muted);min-height:1.6em}
+  .wday .temp{font-weight:700;font-size:.88rem}
+  .wday .temp .lo{color:var(--muted);font-weight:400}
   .day{border:1px solid var(--border);border-radius:10px;padding:8px}
   .day h3{margin:0 0 6px;font-size:.78rem;color:var(--muted);font-weight:600}
   .daypart{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:.76rem;gap:6px}
@@ -127,6 +134,11 @@
 <div class="card" id="seaLevelCard">
   <h2>🌊 Merivedenkorkeus</h2>
   <div id="seaLevelBody">Ladataan…</div>
+</div>
+
+<div class="card" id="weatherCard">
+  <h2>🌤️ Sää (3 vrk)</h2>
+  <div id="weatherBody">Ladataan…</div>
 </div>
 
 <button class="refresh-btn" onclick="loadAll()">↻ Päivitä nyt</button>
@@ -371,10 +383,30 @@ async function loadMarineForecast(lat, lon){
   return fetchJson(url);
 }
 async function loadWindForecast(lat, lon){
+  // Samalla haulla myös vuorokausikohtainen sää (säätila + ylin/alin lämpötila) -
+  // sama Open-Meteo Forecast API -osoite tukee sekä hourly- että daily-parametreja.
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m` +
+    `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
     `&wind_speed_unit=ms&timezone=Europe%2FHelsinki&forecast_days=6&_=${Date.now()}`;
   return fetchJson(url);
+}
+
+// WMO-säätilakoodit (Open-Meteon käyttämä vakioluokitus) karkeasti suomeksi + ikoni.
+const WEATHER_CODES = {
+  0: ["☀️", "Selkeää"], 1: ["🌤️", "Enimmäkseen selkeää"], 2: ["⛅", "Puolipilvistä"], 3: ["☁️", "Pilvistä"],
+  45: ["🌫️", "Sumua"], 48: ["🌫️", "Huurusumua"],
+  51: ["🌦️", "Heikkoa tihkua"], 53: ["🌦️", "Tihkusadetta"], 55: ["🌦️", "Kovaa tihkua"],
+  56: ["🌧️", "Jäätävää tihkua"], 57: ["🌧️", "Jäätävää tihkua"],
+  61: ["🌧️", "Heikkoa sadetta"], 63: ["🌧️", "Sadetta"], 65: ["🌧️", "Rankkasadetta"],
+  66: ["🌧️", "Jäätävää sadetta"], 67: ["🌧️", "Jäätävää sadetta"],
+  71: ["🌨️", "Heikkoa lumisadetta"], 73: ["🌨️", "Lumisadetta"], 75: ["🌨️", "Rankkaa lumisadetta"], 77: ["🌨️", "Lumijyväsiä"],
+  80: ["🌦️", "Sadekuuroja"], 81: ["🌦️", "Sadekuuroja"], 82: ["🌧️", "Rankkoja sadekuuroja"],
+  85: ["🌨️", "Lumikuuroja"], 86: ["🌨️", "Runsaita lumikuuroja"],
+  95: ["⛈️", "Ukkosta"], 96: ["⛈️", "Ukkosta ja raetta"], 99: ["⛈️", "Ukkosta ja raetta"],
+};
+function weatherCodeInfo(code){
+  return WEATHER_CODES[code] ?? ["–", "Ei tietoa"];
 }
 
 function renderHistory(observations){
@@ -566,6 +598,27 @@ function renderSeaLevel(marineAvomeri, marineRannikko){
   return `<div>Avomeri: ${val(marineAvomeri)}</div><div>Rannikko: ${val(marineRannikko)}</div>`;
 }
 
+// Ihan perus 3 vuorokauden sääennuste (säätila + ylin/alin lämpötila) - rannikon
+// (Suomenlinna) koordinaateista, koska ilman lämpötila/pilvisyys ei juuri eroa
+// Avomeren ja Rannikon välillä samalla Suomenlahden alueella.
+function renderWeatherForecast(daily){
+  if (!daily || !daily.time?.length) return "<div class='hist-caption'>Sääennuste ei saatavilla.</div>";
+  const days = daily.time.slice(0, 3).map((t, i) => {
+    const d = new Date(t);
+    const label = d.toLocaleDateString("fi-FI", {weekday:"short", day:"numeric", month:"numeric"});
+    const [icon, text] = weatherCodeInfo(daily.weather_code?.[i]);
+    const tmax = daily.temperature_2m_max?.[i];
+    const tmin = daily.temperature_2m_min?.[i];
+    return `<div class="wday">
+      <div class="d">${label}</div>
+      <div class="icon">${icon}</div>
+      <div class="label">${text}</div>
+      <div class="temp">${tmax != null ? Math.round(tmax)+"°" : "–"} <span class="lo">${tmin != null ? Math.round(tmin)+"°" : "–"}</span></div>
+    </div>`;
+  }).join("");
+  return `<div class="wdays">${days}</div>`;
+}
+
 async function loadAll(){
   document.getElementById("topSub").textContent = "Päivitetään…";
   const cardsEl = document.getElementById("cards");
@@ -584,6 +637,7 @@ async function loadAll(){
     renderLocationCard("avomeri", buoyData?.stations?.avomeri, marineAvomeri, windAvomeri);
 
   document.getElementById("seaLevelBody").innerHTML = renderSeaLevel(marineAvomeri, marineRannikko);
+  document.getElementById("weatherBody").innerHTML = renderWeatherForecast(windRannikko?.daily);
 
   const genAt = buoyData?.generated_at;
   document.getElementById("topSub").textContent = genAt
