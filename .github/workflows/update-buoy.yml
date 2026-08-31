@@ -1,0 +1,40 @@
+name: Päivitä aaltopoijudata
+
+on:
+  schedule:
+    # Joka 30. minuutti. GitHubin cron-ajastin on "parhaan yrityksen" mukainen
+    # ja voi viivästyä ruuhka-aikoina - se on ok tähän käyttöön.
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}   # mahdollistaa manuaalisen ajon Actions-välilehdeltä
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-buoy
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Hae poijudata
+        run: python scripts/fetch_buoy.py
+
+      - name: Committaa muutokset (jos data muuttui)
+        run: |
+          git config user.name "almejon-dashboard-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/buoy.json
+          if git diff --cached --quiet; then
+            echo "Ei muutoksia - ei committia."
+          else
+            git commit -m "Päivitä poijudata $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            git push
+          fi
