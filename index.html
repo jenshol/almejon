@@ -73,13 +73,6 @@
   .windnow .arrow{font-size:1rem}
 
   .days{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
-  .wdays{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .wday{border:1px solid var(--border);border-radius:10px;padding:8px 6px;text-align:center}
-  .wday .d{font-size:.72rem;color:var(--muted);font-weight:600}
-  .wday .icon{font-size:1.5rem;margin:4px 0 2px}
-  .wday .label{font-size:.66rem;color:var(--muted);min-height:1.6em}
-  .wday .temp{font-weight:700;font-size:.88rem}
-  .wday .temp .lo{color:var(--muted);font-weight:400}
   .day{border:1px solid var(--border);border-radius:10px;padding:8px}
   .day h3{margin:0 0 6px;font-size:.78rem;color:var(--muted);font-weight:600}
   .daypart{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:.76rem;gap:6px}
@@ -137,7 +130,7 @@
 </div>
 
 <div class="card" id="weatherCard">
-  <h2>🌤️ Sää (3 vrk)</h2>
+  <h2>🌤️ Sää — Porkkala (3 vrk)</h2>
   <div id="weatherBody">Ladataan…</div>
 </div>
 
@@ -227,6 +220,11 @@ const LOCATIONS = {
     lat: 60.1233, lon: 24.9725,
   },
 };
+
+// Sääennuste (ilman lämpötila + säätila) haetaan vain yhdestä pisteestä, koska se ei
+// juuri eroa avomeren ja rannikon välillä samalla Suomenlahden kaistaleella. Porkkala
+// on hyvä yleispiste - Kirkkonummen edustalla, keskellä aluetta.
+const WEATHER_LOCATION = { name: "Porkkala", lat: 59.983, lon: 24.4325 };
 
 // Suomenkieliset ilmansuunnat (8 pääilmansuuntaa - riittävä tarkkuus tähän käyttöön)
 const COMPASS_FI = ["P","KO","I","KA","E","LO","L","LU"];
@@ -384,11 +382,16 @@ async function loadMarineForecast(lat, lon){
 }
 async function loadWindForecast(lat, lon){
   // Samalla haulla myös vuorokausikohtainen sää (säätila + ylin/alin lämpötila) -
-  // sama Open-Meteo Forecast API -osoite tukee sekä hourly- että daily-parametreja.
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m` +
-    `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
     `&wind_speed_unit=ms&timezone=Europe%2FHelsinki&forecast_days=6&_=${Date.now()}`;
+  return fetchJson(url);
+}
+async function loadWeatherForecast(lat, lon){
+  // Tuntikohtainen sää (säätila + ilman lämpötila) yhdestä pisteestä (WEATHER_LOCATION) -
+  // ei omaa aallokko-/tuulisijaintia kohden, koska ilma ei juuri eroa niiden välillä.
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&hourly=weather_code,temperature_2m&timezone=Europe%2FHelsinki&forecast_days=4&_=${Date.now()}`;
   return fetchJson(url);
 }
 
@@ -407,6 +410,23 @@ const WEATHER_CODES = {
 };
 function weatherCodeInfo(code){
   return WEATHER_CODES[code] ?? ["–", "Ei tietoa"];
+}
+// Karkea vakavuusjärjestys säätilakoodeille - kun yhdistetään useampi tunti yhdeksi
+// Yö/Aamu/Päivä/Ilta-lohkoksi, näytetään lohkon PAHIN sää (sama periaate kuin
+// aallokko-luokittelussa: pahin yksittäinen tunti ratkaisee, ei keskiarvo).
+function weatherSeverityRank(code){
+  if (code == null || isNaN(code)) return -1;
+  if (code >= 95) return 100;       // ukkonen
+  if (code >= 85) return 90;        // lumikuurot
+  if (code >= 71 && code <= 77) return 80; // lumisade
+  if (code === 65 || code === 66 || code === 67 || code === 82) return 70; // rankka/jäätävä sade
+  if (code === 61 || code === 63 || code === 80 || code === 81) return 60; // sade
+  if (code >= 51 && code <= 57) return 50; // tihku
+  if (code === 45 || code === 48) return 40; // sumu
+  if (code === 3) return 30; // pilvistä
+  if (code === 2) return 20; // puolipilvistä
+  if (code === 1) return 10; // enimmäkseen selkeää
+  return 0; // selkeää
 }
 
 function renderHistory(observations){
@@ -598,25 +618,50 @@ function renderSeaLevel(marineAvomeri, marineRannikko){
   return `<div>Avomeri: ${val(marineAvomeri)}</div><div>Rannikko: ${val(marineRannikko)}</div>`;
 }
 
-// Ihan perus 3 vuorokauden sääennuste (säätila + ylin/alin lämpötila) - rannikon
-// (Suomenlinna) koordinaateista, koska ilman lämpötila/pilvisyys ei juuri eroa
-// Avomeren ja Rannikon välillä samalla Suomenlahden alueella.
-function renderWeatherForecast(daily){
-  if (!daily || !daily.time?.length) return "<div class='hist-caption'>Sääennuste ei saatavilla.</div>";
-  const days = daily.time.slice(0, 3).map((t, i) => {
-    const d = new Date(t);
+// Ihan perus 3 vuorokauden sääennuste, jaettuna samoihin Yö/Aamu/Päivä/Ilta-lohkoihin
+// kuin aallokko-vuorokausikortit (dayPartLabel()) - yhdestä pisteestä (WEATHER_LOCATION),
+// koska ilman lämpötila/pilvisyys ei juuri eroa alueiden välillä. Lohkon sää = pahin
+// tunneittainen säätila lohkon sisällä (weatherSeverityRank), lämpötila = lohkon keskiarvo.
+function renderWeatherForecast(hourly){
+  if (!hourly || !hourly.time?.length) return "<div class='hist-caption'>Sääennuste ei saatavilla.</div>";
+  const times = hourly.time.map(t => new Date(t));
+  const now = new Date();
+
+  const byDay = {};
+  times.forEach((t, i) => {
+    if (t.getTime() < now.getTime() - 3600e3) return; // ohita mennyt
+    const dayKey = t.toDateString();
+    const part = dayPartLabel(t.getHours());
+    byDay[dayKey] ??= {Yö: [], Aamu: [], Päivä: [], Ilta: []};
+    byDay[dayKey][part].push({ code: hourly.weather_code?.[i], temp: hourly.temperature_2m?.[i] });
+  });
+
+  const dayKeys = Object.keys(byDay).slice(0, 3);
+  if (!dayKeys.length) return "<div class='hist-caption'>Sääennuste ei saatavilla.</div>";
+
+  const worstEntry = (arr) => arr.reduce((best, e) =>
+    weatherSeverityRank(e.code) > weatherSeverityRank(best?.code) ? e : best, arr[0]);
+  const avgTemp = (arr) => {
+    const temps = arr.map(x => x.temp).filter(t => t != null && !isNaN(t));
+    return temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : null;
+  };
+
+  const dayCards = dayKeys.map(dk => {
+    const d = new Date(dk);
     const label = d.toLocaleDateString("fi-FI", {weekday:"short", day:"numeric", month:"numeric"});
-    const [icon, text] = weatherCodeInfo(daily.weather_code?.[i]);
-    const tmax = daily.temperature_2m_max?.[i];
-    const tmin = daily.temperature_2m_min?.[i];
-    return `<div class="wday">
-      <div class="d">${label}</div>
-      <div class="icon">${icon}</div>
-      <div class="label">${text}</div>
-      <div class="temp">${tmax != null ? Math.round(tmax)+"°" : "–"} <span class="lo">${tmin != null ? Math.round(tmin)+"°" : "–"}</span></div>
-    </div>`;
+    const parts = ["Yö","Aamu","Päivä","Ilta"].map(p => {
+      const entries = byDay[dk][p];
+      if (!entries.length) return null;
+      const worst = worstEntry(entries);
+      const [icon, text] = weatherCodeInfo(worst?.code);
+      const temp = avgTemp(entries);
+      return `<div class="daypart"><span title="${text}">${icon} ${p}</span>
+        <span>${temp != null ? Math.round(temp)+"°" : "–"}</span></div>`;
+    }).filter(Boolean).join("");
+    return `<div class="day"><h3>${label}</h3>${parts}</div>`;
   }).join("");
-  return `<div class="wdays">${days}</div>`;
+
+  return `<div class="days">${dayCards}</div>`;
 }
 
 async function loadAll(){
@@ -625,11 +670,12 @@ async function loadAll(){
 
   const buoyData = await loadBuoyData();
 
-  const [marineAvomeri, marineRannikko, windAvomeri, windRannikko] = await Promise.all([
+  const [marineAvomeri, marineRannikko, windAvomeri, windRannikko, weatherData] = await Promise.all([
     loadMarineForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
     loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
     loadWindForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
     loadWindForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
+    loadWeatherForecast(WEATHER_LOCATION.lat, WEATHER_LOCATION.lon).catch(e => (console.error(e), null)),
   ]);
 
   cardsEl.innerHTML =
@@ -637,7 +683,7 @@ async function loadAll(){
     renderLocationCard("avomeri", buoyData?.stations?.avomeri, marineAvomeri, windAvomeri);
 
   document.getElementById("seaLevelBody").innerHTML = renderSeaLevel(marineAvomeri, marineRannikko);
-  document.getElementById("weatherBody").innerHTML = renderWeatherForecast(windRannikko?.daily);
+  document.getElementById("weatherBody").innerHTML = renderWeatherForecast(weatherData?.hourly);
 
   const genAt = buoyData?.generated_at;
   document.getElementById("topSub").textContent = genAt
