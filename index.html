@@ -227,6 +227,13 @@ function degToCompass(deg){
   return COMPASS_FI[Math.round(deg / 45) % 8];
 }
 function arrowRotation(deg){ return `rotate(${deg}deg)`; }
+// Pieni suuntanuoli (sama tyyli kuin tuulella) minkä tahansa asteluvun (tulosuunta,
+// meteorologinen/oseanografinen konventio) osoittamiseksi - nuoli näyttää mihin päin
+// aalto/tuuli on menossa (+180astetta tulosuuntaan nähden).
+function dirArrow(deg){
+  if (deg == null || isNaN(deg)) return "";
+  return `<span class="arrow" style="transform:${arrowRotation(deg + 180)}">↑</span>`;
+}
 
 // --- Ted Brewerin Comfort Ratio (CR) ---
 // Vakiintunut veneenrakennuksen tunnusluku, joka yhdistää PAINON, PITUUDEN ja LEVEYDEN
@@ -336,7 +343,8 @@ function minutesAgo(iso){
 function dayPartLabel(hour){
   if (hour >= 6 && hour <= 11) return "Aamu";
   if (hour >= 12 && hour <= 17) return "Päivä";
-  return "Ilta"; // 18-23; yöaikaa (0-5) ei näytetä erikseen käyttäjän pyynnöstä
+  if (hour >= 18 && hour <= 23) return "Ilta";
+  return "Yö"; // 0-5 - kesäyö on valoisa, joten veneily on mahdollista silloinkin
 }
 
 async function fetchJson(url, opts){
@@ -379,7 +387,7 @@ function renderHistory(observations){
     return `<div class="hchip ${isNow ? "" : "faded"}">
       <div class="t">${scoreDot(c?.level, c?.score, 14)}${isNow ? "NYT" : fmtHm(o.time)}</div>
       <div class="h">${o.height_m.toFixed(1)}m</div>
-      <div class="p">${o.period_s.toFixed(1)}s ${degToCompass(o.dir_deg)}</div>
+      <div class="p">${o.period_s.toFixed(1)}s ${dirArrow(o.dir_deg)}${degToCompass(o.dir_deg)}</div>
     </div>`;
   }).join("");
   return `<div class="hist-row">${chips}</div>
@@ -422,24 +430,28 @@ function renderForecastChips(hourly, windHourly, cutoffTime){
   return `<div class="fcast-row">${chips}</div>`;
 }
 
-function renderDayBuckets(hourly, windHourly, cutoffTime){
+function renderDayBuckets(hourly, windHourly){
   if (!hourly) return "<div class='hist-caption'>Ennuste ei saatavilla.</div>";
   const times = hourly.time.map(t => new Date(t));
+  const now = new Date();
+  const todayStr = now.toDateString();
 
-  // Ryhmittele (päivä -> {Aamu:[lvl..], Päivä:[..], Ilta:[..]}). Kaikki tunnit ennen
-  // cutoffTimea (huomisen Päivä-osan alku) näkyvät jo tuntikohtaisessa listassa
-  // ylempänä, joten ne jätetään tästä pois - näin vuorokausikortit jatkuvat saumatta
-  // siitä mihin tuntiennuste jäi, eikä huomisen aamu näy tuplana eikä puutu kokonaan.
+  // Ryhmittele (päivä -> {Yö:[..], Aamu:[..], Päivä:[..], Ilta:[..]}). Tämä päivä
+  // näytetään jo tuntikohtaisesti ylempänä eikä toisteta tässä, mutta HUOMISEN aamu
+  // näytetään tarkoituksella tuplana sekä tuntiennusteessa että täällä - Almejónilla
+  // voi olla yöpymässä vesillä, joten koko seuraava vuorokausi halutaan yhdellä
+  // silmäyksellä samasta laatikosta, vaikka aamu toistuisikin.
   const byDay = {};
   times.forEach((t, i) => {
-    if (t.getTime() < cutoffTime.getTime()) return;
+    if (t.getTime() < now.getTime() - 3600e3) return; // ohita mennyt
     const dayKey = t.toDateString();
+    if (dayKey === todayStr) return;
     const part = dayPartLabel(t.getHours());
     const h = hourly.wave_height?.[i];
     const p = hourly.wave_period?.[i];
     const wind = windHourly?.wind_speed_10m?.[i];
     const c = classify(h, p, wind);
-    byDay[dayKey] ??= {Aamu: [], Päivä: [], Ilta: []};
+    byDay[dayKey] ??= {Yö: [], Aamu: [], Päivä: [], Ilta: []};
     if (c) byDay[dayKey][part].push({score: c.score, h});
   });
 
@@ -458,14 +470,16 @@ function renderDayBuckets(hourly, windHourly, cutoffTime){
   const dayCards = dayKeys.map(dk => {
     const d = new Date(dk);
     const label = d.toLocaleDateString("fi-FI", {weekday:"short", day:"numeric", month:"numeric"});
-    const parts = ["Aamu","Päivä","Ilta"].map(p => {
+    // Yö (00-05) kuuluu kalenteripäivän alkuun, siis ensin - muuten kronologinen järjestys menisi väärin kortin sisällä.
+    const parts = ["Yö","Aamu","Päivä","Ilta"].map(p => {
       const entries = byDay[dk][p];
-      if (!entries.length) return null; // esim. huomisen Aamu - jo katettu tuntiennusteessa
+      if (!entries.length) return null;
       const sc = worstScore(entries);
       const lvl = levelFromScore(sc);
       const mh = maxHeight(entries);
+      // Ei enää Hyvä/Välttävä/Huono-sanaa - väri ja indeksiluku pallossa kertovat saman.
       return `<div class="daypart"><span>${scoreDot(lvl, sc, 18)}${p}</span>
-        <span>${mh != null ? mh.toFixed(1)+" m, " : ""}${levelLabel(lvl)}</span></div>`;
+        <span>${mh != null ? mh.toFixed(1)+" m" : "–"}</span></div>`;
     }).filter(Boolean).join("");
     return `<div class="day"><h3>${label}</h3>${parts}</div>`;
   }).join("");
@@ -503,17 +517,19 @@ function renderLocationCard(locKey, buoyStation, marine, windData){
     <div class="now-facts">
       <div class="fact"><div class="v">${latest.height_m.toFixed(1)} m</div><div class="l">Aallonkorkeus</div></div>
       <div class="fact"><div class="v">${latest.period_s.toFixed(1)} s</div><div class="l">Jaksonpituus</div></div>
-      <div class="fact"><div class="v">${degToCompass(latest.dir_deg)}</div><div class="l">Aallon suunta</div></div>
+      <div class="fact"><div class="v">${dirArrow(latest.dir_deg)}${degToCompass(latest.dir_deg)}</div><div class="l">Aallon suunta</div></div>
       <div class="fact"><div class="v">${latest.sea_temp_c != null ? latest.sea_temp_c.toFixed(1)+"°" : "–"}</div><div class="l">Vedenlämpötila</div></div>
     </div>` : "";
 
   const history = renderHistory(obs);
   // Tuntiennuste jatkuu huomisen "Päivä"-osan alkuun (klo 12) asti, eli kattaa koko
-  // huomisen aamun - vuorokausikortit (renderDayBuckets) jatkavat siitä eteenpäin.
+  // huomisen aamun. Huomisen vuorokausikortti (renderDayBuckets) näyttää silti myös
+  // oman Aamu-lohkonsa - tarkoituksella tuplana - jotta koko seuraava vuorokausi
+  // (yö mukaan lukien) näkyy yhdellä silmäyksellä samasta laatikosta.
   const now = new Date();
   const nextMorningCutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0, 0, 0);
   const forecastNow = renderForecastChips(marine?.hourly, windData?.hourly, nextMorningCutoff);
-  const dayBuckets = renderDayBuckets(marine?.hourly, windData?.hourly, nextMorningCutoff);
+  const dayBuckets = renderDayBuckets(marine?.hourly, windData?.hourly);
   const windNow = renderWindNow(windData);
 
   return `
