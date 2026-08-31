@@ -1,0 +1,135 @@
+{
+  "generated_at": "2026-08-31T09:35:00+03:00",
+  "stations": {
+    "avomeri": {
+      "label": "Suomenlahti (avomeri)",
+      "lat": 59.973,
+      "lon": 25.602,
+      "status": "ok",
+      "fetched_at": "2026-08-31T09:35:00+03:00",
+      "observations": [
+        {
+          "time": "2026-08-31T03:00:00+03:00",
+          "height_m": 0.7,
+          "period_s": 3.3,
+          "dir_compass": "S",
+          "dir_deg": 178,
+          "sea_temp_c": 16.8
+        },
+        {
+          "time": "2026-08-31T04:00:00+03:00",
+          "height_m": 0.7,
+          "period_s": 3.3,
+          "dir_compass": "S",
+          "dir_deg": 184,
+          "sea_temp_c": 16.8
+        },
+        {
+          "time": "2026-08-31T05:00:00+03:00",
+          "height_m": 0.8,
+          "period_s": 3.6,
+          "dir_compass": "S",
+          "dir_deg": 173,
+          "sea_temp_c": 16.9
+        },
+        {
+          "time": "2026-08-31T06:00:00+03:00",
+          "height_m": 0.9,
+          "period_s": 3.7,
+          "dir_compass": "S",
+          "dir_deg": 172,
+          "sea_temp_c": 16.8
+        },
+        {
+          "time": "2026-08-31T07:00:00+03:00",
+          "height_m": 0.8,
+          "period_s": 3.8,
+          "dir_compass": "S",
+          "dir_deg": 181,
+          "sea_temp_c": 16.8
+        },
+        {
+          "time": "2026-08-31T08:00:00+03:00",
+          "height_m": 0.9,
+          "period_s": 3.7,
+          "dir_compass": "S",
+          "dir_deg": 172,
+          "sea_temp_c": 16.8
+        },
+        {
+          "time": "2026-08-31T09:00:00+03:00",
+          "height_m": 0.9,
+          "period_s": 3.9,
+          "dir_compass": "SSE",
+          "dir_deg": 164,
+          "sea_temp_c": 16.8
+        },
+        {
+          "time": "2026-08-31T09:30:00+03:00",
+          "height_m": 1.0,
+          "period_s": 4.1,
+          "dir_compass": "SSE",
+          "dir_deg": 160,
+          "sea_temp_c": 16.6
+        }
+      ]
+    },
+    "rannikko": {
+      "label": "Suomenlinna (rannikko)",
+      "lat": 60.1233,
+      "lon": 24.9725,
+      "status": "ok",
+      "fetched_at": "2026-08-31T09:35:00+03:00",
+      "observations": [
+        {
+          "time": "2026-08-31T05:00:00+03:00",
+          "height_m": 0.5,
+          "period_s": 3.7,
+          "dir_compass": "S",
+          "dir_deg": 175,
+          "sea_temp_c": 16.6
+        },
+        {
+          "time": "2026-08-31T06:00:00+03:00",
+          "height_m": 0.5,
+          "period_s": 3.6,
+          "dir_compass": "S",
+          "dir_deg": 191,
+          "sea_temp_c": 16.6
+        },
+        {
+          "time": "2026-08-31T07:00:00+03:00",
+          "height_m": 0.5,
+          "period_s": 3.7,
+          "dir_compass": "S",
+          "dir_deg": 180,
+          "sea_temp_c": 16.6
+        },
+        {
+          "time": "2026-08-31T08:00:00+03:00",
+          "height_m": 0.5,
+          "period_s": 4.0,
+          "dir_compass": "S",
+          "dir_deg": 176,
+          "sea_temp_c": 16.6
+        },
+        {
+          "time": "2026-08-31T09:00:00+03:00",
+          "height_m": 0.6,
+          "period_s": 3.6,
+          "dir_compass": "S",
+          "dir_deg": 179,
+          "sea_temp_c": 16.6
+        },
+        {
+          "time": "2026-08-31T09:30:00+03:00",
+          "height_m": 0.7,
+          "period_s": 3.9,
+          "dir_compass": "S",
+          "dir_deg": 176,
+          "sea_temp_c": 16.5
+        }
+      ]
+    }
+  }
+}
