@@ -351,14 +351,16 @@ function relLuminance({r, g, b}){
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
-// Vihreä->keltainen jatkuva väriliuku indeksin mukaan koko Hyvä+Välttävä-alueella
-// (0 = täysin vihreä, 2.0 = täysin keltainen) - tämä tekee näkyväksi sen, että esim.
-// 1,1 on selvästi lähempänä hyvää kuin 1,8, vaikka molemmat ovat teksti-luokaltaan
-// "Välttävä". Keltainen->punainen -raja (2.0) pysyy sen sijaan TERÄVÄNÄ, ei liukua:
-// "onko jo huono" haluttiin pitää yksiselitteisenä varoituksena, toisin kuin asteikko
-// siitä kuinka hyvä/välttävä jokin on.
+// Vihreä->keltainen väriliuku vain kapealla indeksivälillä GRADIENT_START..GRADIENT_END:
+// sen alapuolella (esim. 0,3, 0,9, 1,1) pallo on täysin sama kirkas vihreä kuin ennenkin,
+// sen yläpuolella (esim. 1,6, 1,9) täysin sama keltainen kuin ennenkin - vain tällä
+// kapealla "onko tämä vielä ihan hyvä vai jo selvästi välttävä" -rajavyöhykkeellä väri
+// liukuu portaattomasti, jotta juuri se raja ei tunnu mielivaltaisen terävältä hypyltä.
+// Keltainen->punainen -raja (2.0) on edelleen tarkoituksella täysin terävä, ei liukua.
+const GRADIENT_START = 1.1;
+const GRADIENT_END = 1.5;
 function greenYellowBlend(score){
-  const t = Math.max(0, Math.min(1, score / 2));
+  const t = Math.max(0, Math.min(1, (score - GRADIENT_START) / (GRADIENT_END - GRADIENT_START)));
   const green = hexToRgb(cssVarHex("--green-strong"));
   const yellow = hexToRgb(cssVarHex("--yellow-strong"));
   const bg = { r: lerp(green.r, yellow.r, t), g: lerp(green.g, yellow.g, t), b: lerp(green.b, yellow.b, t) };
