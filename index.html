@@ -386,14 +386,21 @@ function renderHistory(observations){
     <div class="hist-caption">Poijuhavainto (Aaltopoiju.fi) — aallon suunta ja jaksonpituus — viim. 4 t taaksepäin → nyt</div>`;
 }
 
-function renderForecastChips(hourly, windHourly, count){
+function renderForecastChips(hourly, windHourly, cutoffTime){
   if (!hourly) return "<div class='hist-caption'>Ennuste ei saatavilla juuri nyt.</div>";
   const now = Date.now();
   const times = hourly.time;
   let startIdx = times.findIndex(t => new Date(t).getTime() >= now);
   if (startIdx === -1) startIdx = 0;
   const idxs = [];
-  for (let i = startIdx; i < times.length && idxs.length < count; i++) idxs.push(i);
+  // Jatketaan tuntikohtaista listaa siihen asti kunnes seuraavan vuorokauden aamu on
+  // kokonaan katettu (cutoffTime = huomisen "Päivä"-osan alku klo 12) - ei kiinteää
+  // lukumäärää, koska tarvittavien tuntien määrä riippuu siitä mihin aikaan päivästä
+  // sivua katsotaan. Turvaraja (48 h) estää listan paisumisen jos data on epätavallista.
+  for (let i = startIdx; i < times.length && idxs.length < 48; i++){
+    if (new Date(times[i]).getTime() >= cutoffTime.getTime()) break;
+    idxs.push(i);
+  }
 
   const chips = idxs.map(i => {
     const h = hourly.wave_height?.[i];
@@ -415,18 +422,18 @@ function renderForecastChips(hourly, windHourly, count){
   return `<div class="fcast-row">${chips}</div>`;
 }
 
-function renderDayBuckets(hourly, windHourly){
+function renderDayBuckets(hourly, windHourly, cutoffTime){
   if (!hourly) return "<div class='hist-caption'>Ennuste ei saatavilla.</div>";
   const times = hourly.time.map(t => new Date(t));
-  const now = new Date();
-  const todayStr = now.toDateString();
 
-  // Ryhmittele (päivä -> {Aamu:[lvl..], Päivä:[..], Ilta:[..]})
+  // Ryhmittele (päivä -> {Aamu:[lvl..], Päivä:[..], Ilta:[..]}). Kaikki tunnit ennen
+  // cutoffTimea (huomisen Päivä-osan alku) näkyvät jo tuntikohtaisessa listassa
+  // ylempänä, joten ne jätetään tästä pois - näin vuorokausikortit jatkuvat saumatta
+  // siitä mihin tuntiennuste jäi, eikä huomisen aamu näy tuplana eikä puutu kokonaan.
   const byDay = {};
   times.forEach((t, i) => {
-    if (t.getTime() < now.getTime() - 3600e3) return; // ohita mennyt
+    if (t.getTime() < cutoffTime.getTime()) return;
     const dayKey = t.toDateString();
-    if (dayKey === todayStr) return; // tämä päivä näytetään jo tuntikohtaisesti ylempänä
     const part = dayPartLabel(t.getHours());
     const h = hourly.wave_height?.[i];
     const p = hourly.wave_period?.[i];
@@ -453,12 +460,13 @@ function renderDayBuckets(hourly, windHourly){
     const label = d.toLocaleDateString("fi-FI", {weekday:"short", day:"numeric", month:"numeric"});
     const parts = ["Aamu","Päivä","Ilta"].map(p => {
       const entries = byDay[dk][p];
+      if (!entries.length) return null; // esim. huomisen Aamu - jo katettu tuntiennusteessa
       const sc = worstScore(entries);
       const lvl = levelFromScore(sc);
       const mh = maxHeight(entries);
       return `<div class="daypart"><span>${scoreDot(lvl, sc, 18)}${p}</span>
         <span>${mh != null ? mh.toFixed(1)+" m, " : ""}${levelLabel(lvl)}</span></div>`;
-    }).join("");
+    }).filter(Boolean).join("");
     return `<div class="day"><h3>${label}</h3>${parts}</div>`;
   }).join("");
 
@@ -500,8 +508,12 @@ function renderLocationCard(locKey, buoyStation, marine, windData){
     </div>` : "";
 
   const history = renderHistory(obs);
-  const forecastNow = renderForecastChips(marine?.hourly, windData?.hourly, 8);
-  const dayBuckets = renderDayBuckets(marine?.hourly, windData?.hourly);
+  // Tuntiennuste jatkuu huomisen "Päivä"-osan alkuun (klo 12) asti, eli kattaa koko
+  // huomisen aamun - vuorokausikortit (renderDayBuckets) jatkavat siitä eteenpäin.
+  const now = new Date();
+  const nextMorningCutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0, 0, 0);
+  const forecastNow = renderForecastChips(marine?.hourly, windData?.hourly, nextMorningCutoff);
+  const dayBuckets = renderDayBuckets(marine?.hourly, windData?.hourly, nextMorningCutoff);
   const windNow = renderWindNow(windData);
 
   return `
