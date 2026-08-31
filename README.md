@@ -6,7 +6,7 @@ Sivu näyttää:
 
 - Nykyhetken aallonkorkeuden ja -jaksonpituuden **oikeasta poijuhavainnosta** (Aaltopoiju.fi), + 4h historia (5 havaintoikkunaa)
 - Ennusteen (Open-Meteo Marine + Forecast API) aallonkorkeudelle, -jaksolle, tuulelle ja merivedenkorkeudelle
-- Selkeän hyvä/välttävä/huono-luokituksen väreillä (vihreä/keltainen/punainen), joka ottaa huomioon Almejónin vesilinjan pituuden (7,3 m, kajuuttavene)
+- Selkeän hyvä/välttävä/huono-luokituksen väreillä (vihreä/keltainen/punainen) ja jatkuvan mukavuusindeksin (näkyy värillisessä pallossa), jotka ottavat huomioon Almejónin mitat ja painon (LWL 7,3 m, LOA 8,37 m, leveys 2,83 m, n. 2500 kg, puoliliukuva runko)
 - Tuulen nopeuden ja suunnan samoissa laatikoissa aaltotietojen kanssa (nyt-tilanne + jokaisessa tuntiennustelaatikossa pieni tuuli-ikoni)
 - Seuraavat tunnit tuntikohtaisina "chippeinä"
 - Seuraavat 4 vuorokautta Aamu/Päivä/Ilta-lohkoina (ei yötä)
@@ -23,8 +23,13 @@ Sivu näyttää:
 
 Kaikki säädöt ovat `index.html`:n `<script>`-osiossa:
 
-- `BOAT_LWL_M` — Almejónin vesilinjan pituus (nyt 7,3 m). Vaikuttaa `classify()`-funktion kynnysarvoihin.
-- `classify(heightM, periodS, windMs)` — hyvä/välttävä/huono-logiikka, oma heuristiikka kajuuttaveneelle. Aallonkorkeuden perustaso lasketaan suhteessa `BOAT_LWL_M`-vakioon (≤6 % → hyvä, ≤12 % → välttävä, muuten huono); jakso (alle 3,0 s huonontaa, yli 5,5 s parantaa) ja tuuli (12/17 m/s) voivat vielä siirtää tasoa. Täysi selitys ja esimerkkilasku ovat sivulla avattavassa "Miten arvio lasketaan?" -osiossa.
+- `BOAT_LWL_M`, `BOAT_LOA_M`, `BOAT_BEAM_M`, `BOAT_DISPLACEMENT_KG` — Almejónin (Scand 7800 Nautic) mitat ja paino veneen omasta teknisestä tiedosta. Vaikuttavat sekä Comfort Ratioon että `classify()`-funktion kynnysarvoihin.
+- `classify(heightM, periodS, windMs)` — palauttaa jatkuvan mukavuusindeksin `{level, score, ...}` (ei portaittaisia pykälänostoja). Kolme osatekijää, kukin oma kaava suoraan ilman turvamarginaaleja, lopputulos on osatekijöiden huonoin (max):
+  1. **Aallon jyrkkyys vs. Michen murtumisraja** (0,14 = ~1/7) — aallonpituus L=1,56×jakso² (deep-water-dispersio), jyrkkyys=korkeus/L. Korvaa vanhat kiinteät jakson kynnysarvot jatkuvalla, fysikaalisella suureella.
+  2. **Korkeus/LWL-suhde, skaalattu Ted Brewerin Comfort Ratiolla** (CR ≈ 17,4 Almejónille — CR yhdistää painon, LWL:n ja LOA:n sekä leveyden^1,333:n). Koska CR on kehitetty purjeveneille eikä sellaisenaan sovi leveään puoliliukuvaan runkoon, sitä käytetään vain kertoimena (CR÷25) yleisohjeen 6 %:n korkeus/LWL-rajalle.
+  3. **Tuuli** (12 m/s → indeksi 1,0, 17 m/s → indeksi 2,0, lineaarinen).
+
+  Indeksi < 1,0 = Hyvä, 1,0–2,0 = Välttävä, > 2,0 = Huono. Täysi kaava, laskuesimerkit ja Comfort Ratio -perustelut ovat sivulla avattavassa "Miten hyvä/välttävä/huono-indeksi lasketaan?" -osiossa.
 - `LOCATIONS` — koordinaatit ja nimet kahdelle alueelle.
 - Poijujen URL:t ja asematarkistukset ovat `scripts/fetch_buoy.py`:ssä (`STATIONS`-sanakirja).
 
@@ -33,6 +38,8 @@ Kaikki säädöt ovat `index.html`:n `<script>`-osiossa:
 - **Aaltopoiju.fi** — oikea, poijuista mitattu aallonkorkeus/-jakso/-suunta ja merivesilämpötila (havainto, ei ennuste). Kolmannen osapuolen sivusto — jos sen HTML-rakenne muuttuu, `scripts/fetch_buoy.py` alkaa raportoida virhettä (ei koskaan hiljaa väärää dataa).
 - **Open-Meteo Marine Weather API** — avoin, ilmainen ennuste aallonkorkeudelle, -jaksolle, -suunnalle, merenpinnan korkeudelle.
 - **Open-Meteo Forecast API** — tuulen nopeus, suunta ja puuska-ennuste.
+- **Ted Brewer Comfort Ratio** — veneenrakennuksen tunnusluku (ks. esim. keelindex.com/formulas/comfort-ratio), käytetty `classify()`-funktion korkeusrajan kertoimena.
+- **Michen kriteeri (Miche, 1944)** — syvän veden aallon murtumisen jyrkkyysraja (~1/7), käytetty jakson vaikutuksen laskennassa jyrkkyytenä kiinteiden kynnysarvojen sijaan.
 
 ## Tunnetut rajoitukset / avoimet kohdat
 

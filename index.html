@@ -82,6 +82,12 @@
   .dot.yellow{background:var(--yellow-strong)}
   .dot.red{background:var(--red-strong)}
 
+  .lvldot{display:inline-flex;align-items:center;justify-content:center;border-radius:50%;
+    font-weight:700;color:#fff;vertical-align:-4px;margin-right:5px;line-height:1}
+  .lvldot.green{background:var(--green-strong)}
+  .lvldot.yellow{background:var(--yellow-strong);color:#3a2c00}
+  .lvldot.red{background:var(--red-strong)}
+
   .windgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
   .arrow{display:inline-block;transition:transform .2s}
 
@@ -113,6 +119,7 @@
   <span><span class="dot green"></span>Hyvä</span>
   <span><span class="dot yellow"></span>Välttävä</span>
   <span><span class="dot red"></span>Huono</span>
+  <span>Pallossa oleva numero = mukavuusindeksi (alle 1,0 hyvä, 1,0–2,0 välttävä, yli 2,0 huono)</span>
 </div>
 
 <div id="cards"></div>
@@ -128,44 +135,54 @@
 </div>
 
 <details class="explain">
-  <summary>Miten hyvä/välttävä/huono-arvio lasketaan?</summary>
+  <summary>Miten hyvä/välttävä/huono-indeksi lasketaan?</summary>
   <p>
-    Almejón on kajuuttavene (ei avovene), vesilinjan pituus (LWL) n. 7,3 m — arvio on
-    oma nyrkkisääntö juuri tälle veneelle, ei virallinen standardi. Laskenta tapahtuu
-    kolmessa vaiheessa:
+    Almejón on Norjalainen Scand 7800 Nautic -kajuuttavene: vesilinja (LWL) 7,3 m,
+    kokonaispituus (LOA) 8,37 m, leveys 2,83 m, vesillelaskupaino n. 2500 kg,
+    puoliliukuva runko, matkanopeus 8–10 kn. Näillä nopeuksilla runko on selvästi
+    syrjäytysalueella (nopeus-pituussuhde n. 1,6–2,0), <strong>ei</strong> liitävällä
+    alueella — siksi laskenta ei käytä liito-veneille (planing hulls, esim. Savitsky/
+    Fridsma-kaavat) tarkoitettuja hakkaus-kiihtyvyyskaavoja, jotka on validoitu vasta
+    paljon suuremmilla nopeus-pituussuhteilla eivätkä sovi tähän veneeseen tällä
+    nopeudella.
   </p>
   <p>
-    <strong>1) Perustaso aallonkorkeudesta suhteessa vesilinjaan.</strong> Aallonkorkeutta
-    ei verrata kiinteään metrilukemaan vaan LWL:n prosenttiosuuteen — pidempi vesilinja
-    kulkee tasaisemmin ja sietää siis enemmän senttejä aaltoa:
-  </p>
-  <table style="width:100%;border-collapse:collapse;font-size:.76rem;margin:4px 0 8px">
-    <tr style="border-bottom:1px solid var(--border)"><td style="padding:3px 4px 3px 0">Aalto / LWL ≤ 6 %</td><td>→ Hyvä <em>(Almejónille ≈ 0,44 m)</em></td></tr>
-    <tr style="border-bottom:1px solid var(--border)"><td style="padding:3px 4px 3px 0">Aalto / LWL ≤ 12 %</td><td>→ Välttävä <em>(≈ 0,88 m)</em></td></tr>
-    <tr><td style="padding:3px 4px 3px 0">Aalto / LWL &gt; 12 %</td><td>→ Huono</td></tr>
-  </table>
-  <p>
-    <strong>2) Jakso voi nostaa tai laskea tasoa yhdellä pykälällä — tämä ei riipu
-    veneen koosta.</strong> Alle 3,0 s jakso tarkoittaa jyrkkää, nykivää paikallista
-    tuuliaallokkoa, jota vesilinjan pituus ei juuri auta vaimentamaan: <em>vene hakkaa
-    aaltoja vaikka korkeus olisi pieni</em>, joten taso huononee yhdellä pykälällä
-    (esim. 0,3 m aalto olisi korkeuden perusteella "Hyvä", mutta jos jakso on vain
-    2,0 s, tulos on "Välttävä" — juuri jakson jyrkkyys, ei korkeus, ratkaisee). Vähintään
-    5,5 s jakso taas on loiva mainingki, joka tuntuu selvästi paremmalta samalla
-    korkeudella, ja parantaa tasoa yhdellä pykälällä (paitsi jos taso on jo "Huono"
-    korkeuden takia — pitkä jakso ei tee isosta aallosta pientä).
+    Indeksi on kolmen <strong>jatkuvan</strong> osatekijän suurin (huonoin) arvo — ei
+    portaittaisia +1/-1-pykälänostoja. Jokainen osatekijä on 0:sta ylöspäin niin, että
+    <strong>alle 1,0 = Hyvä, 1,0–2,0 = Välttävä, yli 2,0 = Huono</strong>:
   </p>
   <p>
-    <strong>3) Tuuli voi vielä nostaa tasoa.</strong> Aallokko kasvaa tuulen perässä
-    viiveellä, joten kova tuuli ennakoi pahenevaa keliä ennen kuin aallot ehtivät
-    kasvaa: 12 m/s huonontaa yhdellä pykälällä, 17 m/s tai enemmän pakottaa suoraan
-    "Huono"-tasolle riippumatta aallosta.
+    <strong>1) Aallon jyrkkyys suhteessa murtumisrajaan (korvaa vanhat jakson kynnysarvot).</strong>
+    Aallonpituus lasketaan syvän veden kaavalla L = 1,56 × jakso² (m), ja jyrkkyys on
+    korkeus/L. Michen kriteerin mukaan aalto murtuu kun jyrkkyys ylittää n. 0,14 (~1/7) —
+    tämä on aallon oma fysikaalinen raja, ei arvioitu. Indeksi = jyrkkyys ÷ 0,07 (puolet
+    murtumisrajasta = kynnys 1,0). Esimerkki: 0,3 m / 2,0 s → L=6,2 m → jyrkkyys 0,048 →
+    indeksi 0,69. Sama 0,3 m mutta 5 s jaksolla → L=39 m → jyrkkyys 0,008 → indeksi 0,11 —
+    juuri jakson jyrkkyys, ei korkeus, ratkaisee erot.
   </p>
   <p>
-    Tarkat vakiot (<code>HEIGHT_RATIO_HYVA_MAX</code>, <code>HEIGHT_RATIO_VALTTAVA_MAX</code>,
-    <code>PERIOD_JYRKKA_S</code>, <code>PERIOD_LOIVA_S</code>, <code>WIND_VALTTAVA_MS</code>,
-    <code>WIND_HUONO_MS</code>) ja koko <code>classify()</code>-funktio ovat
-    index.html:n lähdekoodissa muokattavissa.
+    <strong>2) Korkeus suhteessa vesilinjaan, painotettu Ted Brewerin Comfort Ratiolla.</strong>
+    Comfort Ratio (CR) on veneenrakennuksen vakiintunut tunnusluku, joka yhdistää painon,
+    pituuden ja leveyden: CR = paino(lbs) ÷ [0,65 × (0,7×LWL+0,3×LOA)(ft) × leveys(ft)^1,333].
+    Almejónille CR ≈ 17,4. CR on kehitetty purjeveneille eikä sellaisenaan kerro
+    "epämukava" leveän puoliliukuvan rungon takia (leveys rankaisee kaavassa voimakkaasti) —
+    siksi sitä käytetään täällä vain <em>kertoimena</em>: CR ÷ 25 (25 = Brewerin oman
+    "rannikkoristeilijä"-vyöhykkeen 20–30 keskikohta) ≈ 0,70. Tällä kertoimella skaalataan
+    yleisohjeen 6 %:n korkeus/LWL-raja n. 4,2 %:iin Almejónille (≈ 0,30 m; Välttävä-raja
+    kaksinkertaisena ≈ 0,61 m). Indeksi = (korkeus/LWL) ÷ 0,042.
+  </p>
+  <p>
+    <strong>3) Tuuli.</strong> Aallokko kasvaa tuulen perässä viiveellä, joten kova tuuli
+    ennakoi pahenevaa keliä ennen kuin aallot ehtivät kasvaa: indeksi = 1,0 tuulella
+    12 m/s, 2,0 tuulella 17 m/s (~Beaufort 7), ja lineaarinen väliltä/yli.
+  </p>
+  <p>
+    Ei turvamarginaaleja eikä pyöristyksiä ylöspäin — luvut ovat kaavat suoraan, ja
+    pyöreä pallo värillisen tason vieressä näyttää aina tarkan indeksin. Kaikki vakiot
+    (<code>BOAT_LOA_M</code>, <code>BOAT_BEAM_M</code>, <code>BOAT_DISPLACEMENT_KG</code>,
+    <code>MICHE_STEEPNESS_LIMIT</code>, <code>HEIGHT_RATIO_HYVA_BASE</code>,
+    <code>WIND_VALTTAVA_MS</code>, <code>WIND_HUONO_MS</code>) ja koko
+    <code>classify()</code>-funktio ovat index.html:n lähdekoodissa muokattavissa.
   </p>
 </details>
 
@@ -178,7 +195,15 @@
 </footer>
 
 <script>
-const BOAT_LWL_M = 7.3; // Almejón, Scand Nautic 7800 - vesilinjan pituus (arvio)
+// --- Almejón: Scand 7800 Nautic ---
+// Mitat veneen omasta teknisestä tiedosta: LWL = "Lengde i skrog" (Lh), LOA = "Lengde max"
+// (Lmax, sis. keula/perälaite), beam = "Bredde max" (Bmax).
+const BOAT_LWL_M = 7.3;
+const BOAT_LOA_M = 8.37;
+const BOAT_BEAM_M = 2.83;
+// Vesillelaskupaino n. 2500 kg (ilmoitettu, sis. poltto-/vesitankit ja varusteet -
+// valmistajan tyhjäpaino tyhjin tankein on esitteen mukaan n. 2400 kg).
+const BOAT_DISPLACEMENT_KG = 2500;
 
 const LOCATIONS = {
   avomeri: {
@@ -203,51 +228,101 @@ function degToCompass(deg){
 }
 function arrowRotation(deg){ return `rotate(${deg}deg)`; }
 
-// Aallonkorkeuden PERUSTASO lasketaan suhteessa Almejónin vesilinjan pituuteen
-// (BOAT_LWL_M) - ei kiinteänä metrilukemana. Näin luku mukautuu automaattisesti,
-// jos BOAT_LWL_M-vakiota joskus muutetaan (esim. venevaihdon yhteydessä).
-// Nyrkkisääntö (ei virallinen standardi, ks. "Miten arvio lasketaan?" sivulla):
-//   aallonkorkeus / vesilinja <= 6 %   -> Hyvä
-//   aallonkorkeus / vesilinja <= 12 %  -> Välttävä
-//   aallonkorkeus / vesilinja > 12 %   -> Huono
-// Almejónille (7,3 m) tämä tarkoittaa n. 0,44 m ja 0,88 m korkeuksia rajoina.
-const HEIGHT_RATIO_HYVA_MAX = 0.06;
-const HEIGHT_RATIO_VALTTAVA_MAX = 0.12;
+// --- Ted Brewerin Comfort Ratio (CR) ---
+// Vakiintunut veneenrakennuksen tunnusluku, joka yhdistää PAINON, PITUUDEN ja LEVEYDEN
+// yhdeksi luvuksi: CR = Displ(lbs) / (0.65 x (0.7xLWL + 0.3xLOA)(ft) x Beam(ft)^1.333).
+// Lähde: Ted Brewer / keelindex.com/formulas/comfort-ratio. Brewerin omat vertailuluokat
+// (kehitetty alun perin PURJEVENEILLE): <20 nykivä/urheilullinen, 20-30 rannikkoristeilijä,
+// 30-40 kohtalainen valtamerivene, 40+ raskas valtamerivene.
+// Almejónin CR jää tässä alle 20:n, koska kaava rankaisee suuresta leveydestä (Beam^1.333) -
+// puoliliukuvalla moottoriveneellä on tyypillisesti enemmän leveyttä suhteessa painoon
+// kuin painavalla purjeveneellä, joten raakaa CR-lukua EI tulkita sellaisenaan "epämukava"-
+// tuomiona. Sen sijaan sitä käytetään SUHTEELLISENA kertoimena: kuinka paljon Almejón
+// poikkeaa Brewerin oman "rannikkoristeilijä"-vyöhykkeen (20-30) keskikohdasta (CR=25).
+// Tuo kerroin skaalaa alla olevaa korkeussuhteen raja-arvoa - ei mitään muuta.
+function brewerComfortRatio(displKg, lwlM, loaM, beamM){
+  const displLb = displKg / 0.45359237;
+  const lwlFt = lwlM / 0.3048, loaFt = loaM / 0.3048, beamFt = beamM / 0.3048;
+  return displLb / (0.65 * (0.7 * lwlFt + 0.3 * loaFt) * Math.pow(beamFt, 1.333));
+}
+const BREWER_CR = brewerComfortRatio(BOAT_DISPLACEMENT_KG, BOAT_LWL_M, BOAT_LOA_M, BOAT_BEAM_M);
+const CR_REFERENCE = 25; // Brewerin "rannikkoristeilijä"-vyöhykkeen (20-30) keskikohta
+const CR_FACTOR = BREWER_CR / CR_REFERENCE; // Almejónille n. 0,70
 
-// Jakson (aallon pituuden) vaikutus EI riipu veneen koosta - se on kiinteä,
-// koska lyhyt jakso tarkoittaa jyrkkää, nykivää aallokkoa joka hakkaa venettä
-// korkeudesta riippumatta, ja pitkä jakso on loiva mainingki joka tuntuu
-// paremmalta samalla korkeudella (runko ehtii nousta ja laskea mukana).
-const PERIOD_JYRKKA_S = 3.0;   // alle tämän: aallokko on jyrkkää -> huonontaa yhdellä tasolla
-const PERIOD_LOIVA_S = 5.5;    // vähintään tämän: loiva mainingki -> parantaa yhdellä tasolla
+// --- Aallon jyrkkyys suhteessa Michen murtorajaan (korvaa entiset jakson kynnysarvot) ---
+// Syvän veden aallonpituus L (m) dispersioyhtälöllä L = 1,56 x T^2 (T = jakso sekunteina).
+// Michen kriteeri: aalto murtuu kun sen jyrkkyys H/L ylittää n. 0,14 (~1/7) - tämä on
+// aallon OMA fysikaalinen raja, ei riipu veneestä lainkaan. Lähde: Miche (1944);
+// ks. Wikipedia "Miche criterion". Lyhyt jakso -> jyrkkä aalto -> lähempänä murtumaa ->
+// nykivämpi/hakkaavampi tuntuma, vaikka korkeus olisi pieni (juuri se efekti, jonka takia
+// 0,3 m / 2,0 s -aalto tuntuu pahemmalta kuin 0,3 m / 5 s -mainingki).
+const MICHE_STEEPNESS_LIMIT = 0.14;
 
-// Tuuli: aallokko kasvaa tuulen perässä viiveellä, joten kova tuuli nostaa
-// luokitusta vaikka aallot eivät olisi vielä ehtineet kasvaa sen mukaisiksi.
-// Raja-arvot vastaavat karkeasti Beaufort 6 (kova tuuli) ja 7-8 (myrskyn puuska).
-const WIND_HUONO_MS = 17;
+// --- Aallonkorkeuden perustaso suhteessa vesilinjaan ---
+// Pienveneilyn yleisohje: aalto/LWL <= 6 % on mukavaa. Tämä 6 % skaalataan CR_FACTOR:lla,
+// jolloin Almejónin (CR n. 17, alle Brewerin "rannikkoristeilijä"-keskikohdan) raja on
+// hieman tiukempi kuin yleisohjeen olettamalle "keskivertoveneelle" - juuri niin kuin
+// pitääkin, koska Almejón on painoonsa nähden leveä, nopea puoliliukuva runko, ei raskas
+// syrjäytysrunko joka vaimentaisi liikettä massallaan.
+const HEIGHT_RATIO_HYVA_BASE = 0.06;
+const HEIGHT_RATIO_HYVA_MAX = HEIGHT_RATIO_HYVA_BASE * CR_FACTOR;   // Almejónille n. 4,2 %
+const HEIGHT_RATIO_VALTTAVA_MAX = HEIGHT_RATIO_HYVA_MAX * 2;         // aina 2x yllä oleva
+
+// Tuuli: aallokko kasvaa tuulen perässä viiveellä, joten kova tuuli ennakoi pahenevaa
+// keliä ennen kuin aallot ehtivät kasvaa sen mukaisiksi. 12 m/s = raja jolloin efekti
+// alkaa, 17 m/s (~Beaufort 7) = raja jolloin efekti on täysi.
 const WIND_VALTTAVA_MS = 12;
+const WIND_HUONO_MS = 17;
 
 /**
- * Almejónin oma nyrkkisääntö aallon mukavuudelle. EI virallinen standardi -
- * ks. selitys sivulla ("Miten arvio lasketaan?"). Palauttaa 'green'|'yellow'|'red'.
+ * Muuntaa jatkuvan indeksin (0...2+) väriluokaksi:
+ *   < 1.0 = Hyvä, 1.0-2.0 = Välttävä, > 2.0 = Huono.
+ * Raja-arvo 1.0 tarkoittaa aina "juuri kynnyksellä", 2.0 "pahin osatekijä täydessä
+ * mitassaan" (esim. aalto murtumassa, tai tuuli 17 m/s) - ei mielivaltaista pykälää.
+ */
+function levelFromScore(score){
+  if (score == null || isNaN(score)) return null;
+  return score < 1 ? "green" : (score < 2 ? "yellow" : "red");
+}
+
+/**
+ * Jatkuva mukavuusindeksi. EI portaittaisia +1/-1-pykälänostoja - jokainen osatekijä
+ * (korkeus suhteessa veneeseen, jyrkkyys suhteessa murtumaan, tuuli) lasketaan omalla
+ * kaavallaan suoraan ilman turvamarginaaleja, ja lopputulos on osatekijöistä HUONOIN
+ * (max) - pahin yksittäinen efekti ratkaisee, ei keskiarvo.
+ * Palauttaa {level, score, scoreHeight, scoreSteepness, scoreWind} tai null.
  */
 function classify(heightM, periodS, windMs){
   if (heightM == null || isNaN(heightM)) return null;
-  const ratio = heightM / BOAT_LWL_M;
-  let level = ratio <= HEIGHT_RATIO_HYVA_MAX ? 0 : (ratio <= HEIGHT_RATIO_VALTTAVA_MAX ? 1 : 2); // 0=hyvä 1=välttävä 2=huono
 
-  if (periodS != null && !isNaN(periodS)){
-    if (periodS < PERIOD_JYRKKA_S) level = Math.min(2, level + 1);
-    else if (periodS >= PERIOD_LOIVA_S) level = Math.max(0, level - (level < 2 ? 1 : 0));
+  const heightRatio = heightM / BOAT_LWL_M;
+  const scoreHeight = heightRatio / HEIGHT_RATIO_HYVA_MAX;
+
+  let scoreSteepness = 0;
+  if (periodS != null && !isNaN(periodS) && periodS > 0){
+    const wavelengthM = 1.56 * periodS * periodS;
+    const steepness = heightM / wavelengthM;
+    scoreSteepness = steepness / (MICHE_STEEPNESS_LIMIT / 2);
   }
+
+  let scoreWind = 0;
   if (windMs != null && !isNaN(windMs)){
-    if (windMs >= WIND_HUONO_MS) level = 2;
-    else if (windMs >= WIND_VALTTAVA_MS) level = Math.min(2, level + 1);
+    scoreWind = windMs <= WIND_VALTTAVA_MS
+      ? windMs / WIND_VALTTAVA_MS
+      : 1 + (windMs - WIND_VALTTAVA_MS) / (WIND_HUONO_MS - WIND_VALTTAVA_MS);
   }
-  return ["green","yellow","red"][level];
+
+  const score = Math.max(scoreHeight, scoreSteepness, scoreWind);
+  return { level: levelFromScore(score), score, scoreHeight, scoreSteepness, scoreWind };
 }
 function levelLabel(level){
   return {green:"Hyvä", yellow:"Välttävä", red:"Huono", null:"–"}[level] ?? "–";
+}
+function scoreDot(level, score, size){
+  size = size || 18;
+  if (level == null) return "";
+  const txt = (score != null && !isNaN(score)) ? score.toFixed(1) : "–";
+  return `<span class="lvldot ${level}" style="width:${size}px;height:${size}px;font-size:${Math.max(8, Math.round(size * 0.42))}px" title="${levelLabel(level)}, indeksi ${txt}">${txt}</span>`;
 }
 
 function fmtHm(iso){
@@ -300,8 +375,9 @@ function renderHistory(observations){
   const last5 = observations.slice(-5);
   const chips = last5.map((o, i) => {
     const isNow = i === last5.length - 1;
+    const c = classify(o.height_m, o.period_s, null);
     return `<div class="hchip ${isNow ? "" : "faded"}">
-      <div class="t">${isNow ? "NYT" : fmtHm(o.time)}</div>
+      <div class="t">${scoreDot(c?.level, c?.score, 14)}${isNow ? "NYT" : fmtHm(o.time)}</div>
       <div class="h">${o.height_m.toFixed(1)}m</div>
       <div class="p">${o.period_s.toFixed(1)}s ${degToCompass(o.dir_deg)}</div>
     </div>`;
@@ -324,10 +400,10 @@ function renderForecastChips(hourly, windHourly, count){
     const p = hourly.wave_period?.[i];
     const wind = windHourly?.wind_speed_10m?.[i];
     const windDir = windHourly?.wind_direction_10m?.[i];
-    const lvl = classify(h, p, wind);
+    const c = classify(h, p, wind);
     const t = new Date(times[i]);
-    return `<div class="fchip ${lvl ?? ""}">
-      <div class="t">${t.toLocaleTimeString("fi-FI",{hour:"2-digit"})}</div>
+    return `<div class="fchip ${c?.level ?? ""}">
+      <div class="t">${scoreDot(c?.level, c?.score, 14)}${t.toLocaleTimeString("fi-FI",{hour:"2-digit"})}</div>
       <div class="h">${h != null ? h.toFixed(1)+"m" : "–"}</div>
       <div class="p">${p != null ? p.toFixed(1)+"s" : "–"}</div>
       <div class="w">
@@ -355,20 +431,17 @@ function renderDayBuckets(hourly, windHourly){
     const h = hourly.wave_height?.[i];
     const p = hourly.wave_period?.[i];
     const wind = windHourly?.wind_speed_10m?.[i];
-    const lvl = classify(h, p, wind);
+    const c = classify(h, p, wind);
     byDay[dayKey] ??= {Aamu: [], Päivä: [], Ilta: []};
-    if (lvl) byDay[dayKey][part].push({lvl, h});
+    if (c) byDay[dayKey][part].push({score: c.score, h});
   });
 
   const dayKeys = Object.keys(byDay).slice(0, 4);
   if (!dayKeys.length) return "<div class='hist-caption'>Ei tulevien vuorokausien dataa.</div>";
 
-  const worst = (arr) => {
-    if (!arr.length) return null;
-    const lvls = arr.map(x => x.lvl);
-    if (lvls.includes("red")) return "red";
-    if (lvls.includes("yellow")) return "yellow";
-    return "green";
+  const worstScore = (arr) => {
+    const scores = arr.map(x => x.score).filter(s => s != null && !isNaN(s));
+    return scores.length ? Math.max(...scores) : null;
   };
   const maxHeight = (arr) => {
     const heights = arr.map(x => x.h).filter(h => h != null && !isNaN(h));
@@ -380,9 +453,10 @@ function renderDayBuckets(hourly, windHourly){
     const label = d.toLocaleDateString("fi-FI", {weekday:"short", day:"numeric", month:"numeric"});
     const parts = ["Aamu","Päivä","Ilta"].map(p => {
       const entries = byDay[dk][p];
-      const lvl = worst(entries);
+      const sc = worstScore(entries);
+      const lvl = levelFromScore(sc);
       const mh = maxHeight(entries);
-      return `<div class="daypart"><span><span class="dot ${lvl ?? "green"}"></span>${p}</span>
+      return `<div class="daypart"><span>${scoreDot(lvl, sc, 18)}${p}</span>
         <span>${mh != null ? mh.toFixed(1)+" m, " : ""}${levelLabel(lvl)}</span></div>`;
     }).join("");
     return `<div class="day"><h3>${label}</h3>${parts}</div>`;
@@ -396,7 +470,7 @@ function renderLocationCard(locKey, buoyStation, marine, windData){
   const obs = buoyStation?.observations ?? [];
   const latest = obs.length ? obs[obs.length - 1] : null;
 
-  let nowLevel = null, ageMin = null, stale = false;
+  let nowLevel = null, nowScore = null, ageMin = null, stale = false;
   if (latest){
     ageMin = minutesAgo(latest.time);
     // Aaltopoiju.fi:n HAVAINTO-lukema päivittyy vain n. kerran tunnissa (joskus viiveellä),
@@ -404,12 +478,14 @@ function renderLocationCard(locKey, buoyStation, marine, windData){
     // Varoitetaan vasta kun havainto on selvästi useamman päivityssyklin takana.
     stale = ageMin > 130;
     const windNow = windData?.hourly?.wind_speed_10m?.[0];
-    nowLevel = classify(latest.height_m, latest.period_s, windNow);
+    const c = classify(latest.height_m, latest.period_s, windNow);
+    nowLevel = c?.level;
+    nowScore = c?.score;
   }
 
   const badge = nowLevel
     ? `<div class="status-badge ${nowLevel}">
-         <div class="big">${levelLabel(nowLevel)}</div>
+         <div class="big">${scoreDot(nowLevel, nowScore, 24)}${levelLabel(nowLevel)}</div>
          <div class="small">${stale ? `<span class="stale">Havainto ${ageMin} min vanha - tarkista!</span>` : `Poijuhavainto ${ageMin} min sitten`}</div>
        </div>`
     : `<div class="status-badge yellow"><div class="big">Ei dataa</div>
