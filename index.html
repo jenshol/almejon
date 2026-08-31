@@ -351,13 +351,14 @@ function relLuminance({r, g, b}){
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
-// Vihreä->keltainen jatkuva väriliuku indeksin mukaan (0 = täysin vihreä, 1.0 = juuri
-// keltaisen kynnyksellä) - tämä tekee näkyväksi sen, että esim. 0,3 tai 0,9 ovat selvästi
-// mukavampia kuin 0,99 vaikka kaikki kolme näyttäisivät ilman liukua yhtä "vihreältä".
-// Keltainen->punainen -raja (2.0) pysyy sen sijaan TERÄVÄNÄ, ei liukua: "onko jo huono"
-// haluttiin pitää yksiselitteisenä varoituksena, toisin kuin "kuinka hyvä hyvä on".
+// Vihreä->keltainen jatkuva väriliuku indeksin mukaan koko Hyvä+Välttävä-alueella
+// (0 = täysin vihreä, 2.0 = täysin keltainen) - tämä tekee näkyväksi sen, että esim.
+// 1,1 on selvästi lähempänä hyvää kuin 1,8, vaikka molemmat ovat teksti-luokaltaan
+// "Välttävä". Keltainen->punainen -raja (2.0) pysyy sen sijaan TERÄVÄNÄ, ei liukua:
+// "onko jo huono" haluttiin pitää yksiselitteisenä varoituksena, toisin kuin asteikko
+// siitä kuinka hyvä/välttävä jokin on.
 function greenYellowBlend(score){
-  const t = Math.max(0, Math.min(1, score));
+  const t = Math.max(0, Math.min(1, score / 2));
   const green = hexToRgb(cssVarHex("--green-strong"));
   const yellow = hexToRgb(cssVarHex("--yellow-strong"));
   const bg = { r: lerp(green.r, yellow.r, t), g: lerp(green.g, yellow.g, t), b: lerp(green.b, yellow.b, t) };
@@ -375,7 +376,7 @@ function scoreDot(level, score, size){
   if (level == null) return "";
   const txt = (score != null && !isNaN(score)) ? score.toFixed(1) : "–";
   let colorStyle = "";
-  if (level === "green" && score != null && !isNaN(score)){
+  if ((level === "green" || level === "yellow") && score != null && !isNaN(score)){
     const { bg, fg } = greenYellowBlend(score);
     colorStyle = `background:${bg};color:${fg};`;
   }
