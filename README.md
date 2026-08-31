@@ -1,6 +1,6 @@
 # Almejón — veneilykeliohjain
 
-Mobiilioptimoitu, yhden tiedoston dashboard Almejónin veneilykelien tarkistamiseen kahdelle Suomenlahden alueelle: **avomeri** (lähellä Kalbådagrundia) ja **rannikko** (Suomenlinna).
+Mobiilioptimoitu, yhden tiedoston dashboard Almejónin veneilykelien tarkistamiseen kahdelle Suomenlahden alueelle: **rannikko** (Suomenlinna, näytetään ensin) ja **avomeri** (lähellä Kalbådagrundia).
 
 Sivu näyttää:
 
@@ -30,8 +30,9 @@ Kaikki säädöt ovat `index.html`:n `<script>`-osiossa:
   3. **Tuuli** (12 m/s → indeksi 1,0, 17 m/s → indeksi 2,0, lineaarinen).
 
   Indeksi < 1,0 = Hyvä, 1,0–2,0 = Välttävä, > 2,0 = Huono. Täysi kaava, laskuesimerkit ja Comfort Ratio -perustelut ovat sivulla avattavassa "Miten hyvä/välttävä/huono-indeksi lasketaan?" -osiossa.
-- `LOCATIONS` — koordinaatit ja nimet kahdelle alueelle.
+- `LOCATIONS` — koordinaatit ja nimet kahdelle alueelle. Näyttöjärjestys (rannikko ennen avomerta) määräytyy `loadAll()`-funktion `renderLocationCard(...)`-kutsujen järjestyksestä, ei `LOCATIONS`-objektista.
 - Poijujen URL:t ja asematarkistukset ovat `scripts/fetch_buoy.py`:ssä (`STATIONS`-sanakirja).
+- "↻ Päivitä nyt" -nappi ei vain piirrä samaa dataa uudelleen: se hakee poijudatan uudelleen (`data/buoy.json`, cache-buster-parametrilla) ja tekee Open-Meteo-ennusteista uudet HTTP-pyynnöt (`&_=Date.now()`-parametri estää selaimen välimuistin) — eli tarkistaa aidosti onko ennuste päivittynyt. Sama tapahtuu automaattisesti 10 min välein.
 
 ## Tietolähteet
 

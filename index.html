@@ -112,14 +112,14 @@
 </head>
 <body>
 
-<h1>⛵ Almejón — ajokeli Suomenlahdella</h1>
+<h1>🚤 Almejón — ajokeli Suomenlahdella</h1>
 <div class="sub" id="topSub">Ladataan…</div>
 
 <div class="legend">
   <span><span class="dot green"></span>Hyvä</span>
   <span><span class="dot yellow"></span>Välttävä</span>
   <span><span class="dot red"></span>Huono</span>
-  <span>Pallossa oleva numero = mukavuusindeksi (alle 1,0 hyvä, 1,0–2,0 välttävä, yli 2,0 huono)</span>
+  <span>Mukavuusindeksi: alle 1,0 hyvä, 1,0–2,0 välttävä, yli 2,0 huono</span>
 </div>
 
 <div id="cards"></div>
@@ -127,12 +127,9 @@
 <div class="card" id="seaLevelCard">
   <h2>🌊 Merivedenkorkeus</h2>
   <div id="seaLevelBody">Ladataan…</div>
-  <p style="font-size:.72rem;color:var(--muted);margin:6px 0 0">
-    Itämerellä ei ole juuri vuoksi- ja luodevaihtelua — korkeus vaihtelee lähinnä tuulen ja
-    ilmanpaineen mukaan. Alla oleva on karkea mallilukema; ennen matalikkoväyliä kannata
-    tarkistaa <a href="https://www.ilmatieteenlaitos.fi/meriveden-korkeus" target="_blank" rel="noopener">Ilmatieteen laitoksen virallinen merivedenkorkeus­ennuste</a>.
-  </p>
 </div>
+
+<button class="refresh-btn" onclick="loadAll()">↻ Päivitä nyt</button>
 
 <details class="explain">
   <summary>Miten hyvä/välttävä/huono-indeksi lasketaan?</summary>
@@ -186,13 +183,12 @@
   </p>
 </details>
 
-<button class="refresh-btn" onclick="loadAll()">↻ Päivitä nyt</button>
-
-<footer>
-  <div><strong>Lähteet:</strong></div>
-  <div>• Havainto + 4 h historia: <a href="https://aaltopoiju.fi/" target="_blank" rel="noopener">Aaltopoiju.fi</a> (Suomenlahti &amp; Suomenlinna -poijut), haettu palvelimella n. 30 min välein GitHub Actionilla — <a id="buoyFetchedLink" href="#">tarkista viimeisin haku</a>.</div>
-  <div>• Aallokko-, tuuli- ja merivedenkorkeus­ennuste: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (avoin data, haetaan suoraan selaimessa reaaliaikaisesti).</div>
-</footer>
+<details class="explain">
+  <summary>Lähteet</summary>
+  <p>• Havainto + 4 h historia: <a href="https://aaltopoiju.fi/" target="_blank" rel="noopener">Aaltopoiju.fi</a> (Suomenlahti &amp; Suomenlinna -poijut), haettu palvelimella n. 30 min välein GitHub Actionilla — <a id="buoyFetchedLink" href="#">tarkista viimeisin haku</a>.</p>
+  <p>• Aallokko-, tuuli- ja merivedenkorkeus­ennuste: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (avoin data, haetaan suoraan uudelleen jokaisella päivityksellä).</p>
+  <p>• Comfort Ratio: <a href="https://keelindex.com/formulas/comfort-ratio" target="_blank" rel="noopener">keelindex.com</a>. Michen kriteeri (aallon murtumisraja): <a href="https://en.wikipedia.org/wiki/Miche_criterion" target="_blank" rel="noopener">Wikipedia</a>.</p>
+</details>
 
 <script>
 // --- Almejón: Scand 7800 Nautic ---
@@ -365,16 +361,19 @@ async function loadBuoyData(){
 }
 
 async function loadMarineForecast(lat, lon){
+  // "&_=..." pakottaa selaimen hakemaan tuoreen vastauksen HTTP-välimuistin sijaan -
+  // tämä on juuri se, mikä tekee "Päivitä nyt" -napista aidon tarkistuksen eikä pelkkää
+  // saman datan uudelleenpiirtoa.
   const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}` +
     `&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,` +
     `wind_wave_height,wind_wave_period,sea_level_height_msl` +
-    `&timezone=Europe%2FHelsinki&forecast_days=6`;
+    `&timezone=Europe%2FHelsinki&forecast_days=6&_=${Date.now()}`;
   return fetchJson(url);
 }
 async function loadWindForecast(lat, lon){
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m` +
-    `&wind_speed_unit=ms&timezone=Europe%2FHelsinki&forecast_days=6`;
+    `&wind_speed_unit=ms&timezone=Europe%2FHelsinki&forecast_days=6&_=${Date.now()}`;
   return fetchJson(url);
 }
 
@@ -390,8 +389,7 @@ function renderHistory(observations){
       <div class="p">${o.period_s.toFixed(1)}s ${dirArrow(o.dir_deg)}${degToCompass(o.dir_deg)}</div>
     </div>`;
   }).join("");
-  return `<div class="hist-row">${chips}</div>
-    <div class="hist-caption">Poijuhavainto (Aaltopoiju.fi) — aallon suunta ja jaksonpituus — viim. 4 t taaksepäin → nyt</div>`;
+  return `<div class="hist-row">${chips}</div>`;
 }
 
 function renderForecastChips(hourly, windHourly, cutoffTime){
@@ -539,8 +537,9 @@ function renderLocationCard(locKey, buoyStation, marine, windData){
       <div class="status-row">${badge}</div>
       ${facts}
       ${windNow}
+      <div style="margin-top:10px;font-size:.72rem;color:var(--muted)">Havaintohistoria:</div>
       ${history}
-      <div style="margin-top:10px;font-size:.72rem;color:var(--muted)">Seuraavat tunnit (aalto + tuuli, Open-Meteo-ennuste):</div>
+      <div style="margin-top:10px;font-size:.72rem;color:var(--muted)">Seuraavat tunnit:</div>
       ${forecastNow}
       <div style="margin-top:6px;font-size:.72rem;color:var(--muted)">Seuraavat vuorokaudet:</div>
       ${dayBuckets}
@@ -581,8 +580,8 @@ async function loadAll(){
   ]);
 
   cardsEl.innerHTML =
-    renderLocationCard("avomeri", buoyData?.stations?.avomeri, marineAvomeri, windAvomeri) +
-    renderLocationCard("rannikko", buoyData?.stations?.rannikko, marineRannikko, windRannikko);
+    renderLocationCard("rannikko", buoyData?.stations?.rannikko, marineRannikko, windRannikko) +
+    renderLocationCard("avomeri", buoyData?.stations?.avomeri, marineAvomeri, windAvomeri);
 
   document.getElementById("seaLevelBody").innerHTML = renderSeaLevel(marineAvomeri, marineRannikko);
 
