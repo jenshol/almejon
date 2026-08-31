@@ -332,11 +332,54 @@ function classify(heightM, periodS, windMs){
 function levelLabel(level){
   return {green:"Hyvä", yellow:"Välttävä", red:"Huono", null:"–"}[level] ?? "–";
 }
+// Purkaa CSS-muuttujan (esim. "--green-strong") raakana hex-arvona - getComputedStyle
+// ottaa automaattisesti huomioon, kumpi teema (vaalea/tumma) on juuri nyt voimassa.
+function cssVarHex(varName){
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+function hexToRgb(hex){
+  hex = hex.replace("#", "");
+  if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+  const num = parseInt(hex, 16);
+  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+}
+function lerp(a, b, t){ return Math.round(a + (b - a) * t); }
+// WCAG-tyylinen suhteellinen luminanssi (0=musta, 1=valkoinen) - käytetään tekstivärin
+// valintaan taustan vaaleuden mukaan, ei taustavärin sekoittamiseen.
+function relLuminance({r, g, b}){
+  const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+
+// Vihreä->keltainen jatkuva väriliuku indeksin mukaan (0 = täysin vihreä, 1.0 = juuri
+// keltaisen kynnyksellä) - tämä tekee näkyväksi sen, että esim. 0,3 tai 0,9 ovat selvästi
+// mukavampia kuin 0,99 vaikka kaikki kolme näyttäisivät ilman liukua yhtä "vihreältä".
+// Keltainen->punainen -raja (2.0) pysyy sen sijaan TERÄVÄNÄ, ei liukua: "onko jo huono"
+// haluttiin pitää yksiselitteisenä varoituksena, toisin kuin "kuinka hyvä hyvä on".
+function greenYellowBlend(score){
+  const t = Math.max(0, Math.min(1, score));
+  const green = hexToRgb(cssVarHex("--green-strong"));
+  const yellow = hexToRgb(cssVarHex("--yellow-strong"));
+  const bg = { r: lerp(green.r, yellow.r, t), g: lerp(green.g, yellow.g, t), b: lerp(green.b, yellow.b, t) };
+  // Tekstiväri EI sekoitu lineaarisesti (se tuottaisi lähes lukukelvottoman kontrastin
+  // liu'un keskivaiheilla) - sen sijaan valitaan valkoinen tai tumma sen mukaan, kumpi
+  // luo paremman kontrastin juuri tähän taustaan. Vaihtuu terävästi puolivälin paikkeilla,
+  // täsmälleen samoihin väreihin kuin vihreän/keltaisen omat tekstivärit molemmissa päissä.
+  const useDark = relLuminance(bg) > 0.35;
+  const fg = useDark ? "rgb(58,44,0)" : "rgb(255,255,255)";
+  return { bg: `rgb(${bg.r},${bg.g},${bg.b})`, fg };
+}
+
 function scoreDot(level, score, size){
   size = size || 18;
   if (level == null) return "";
   const txt = (score != null && !isNaN(score)) ? score.toFixed(1) : "–";
-  return `<span class="lvldot ${level}" style="width:${size}px;height:${size}px;font-size:${Math.max(8, Math.round(size * 0.42))}px" title="${levelLabel(level)}, indeksi ${txt}">${txt}</span>`;
+  let colorStyle = "";
+  if (level === "green" && score != null && !isNaN(score)){
+    const { bg, fg } = greenYellowBlend(score);
+    colorStyle = `background:${bg};color:${fg};`;
+  }
+  return `<span class="lvldot ${level}" style="width:${size}px;height:${size}px;font-size:${Math.max(8, Math.round(size * 0.42))}px;${colorStyle}" title="${levelLabel(level)}, indeksi ${txt}">${txt}</span>`;
 }
 
 function fmtHm(iso){

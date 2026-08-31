@@ -31,6 +31,7 @@ Kaikki säädöt ovat `index.html`:n `<script>`-osiossa:
   3. **Tuuli** (12 m/s → indeksi 1,0, 17 m/s → indeksi 2,0, lineaarinen).
 
   Indeksi < 1,0 = Hyvä, 1,0–2,0 = Välttävä, > 2,0 = Huono. Täysi kaava, laskuesimerkit ja Comfort Ratio -perustelut ovat sivulla avattavassa "Miten hyvä/välttävä/huono-indeksi lasketaan?" -osiossa.
+  Pallon väri Hyvä-alueella (0–1,0) liukuu portaattomasti vihreästä kohti keltaista indeksin mukaan (`greenYellowBlend()`), jotta esim. 0,3 ja 0,98 erottuvat toisistaan vaikka molemmat ovat "Hyvä" — Välttävä→Huono-raja (2,0) sen sijaan on tarkoituksella terävä, ei liukua.
 - `LOCATIONS` — koordinaatit ja nimet kahdelle alueelle. Näyttöjärjestys (rannikko ennen avomerta) määräytyy `loadAll()`-funktion `renderLocationCard(...)`-kutsujen järjestyksestä, ei `LOCATIONS`-objektista.
 - Poijujen URL:t ja asematarkistukset ovat `scripts/fetch_buoy.py`:ssä (`STATIONS`-sanakirja).
 - `WEATHER_LOCATION` — sään hakupiste (oletus: Porkkala). Yksi piste riittää, koska ilman lämpötila/pilvisyys ei juuri eroa Avomeren ja Rannikon välillä.
