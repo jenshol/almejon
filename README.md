@@ -4,12 +4,12 @@ Mobiilioptimoitu, yhden tiedoston dashboard Almejónin veneilykelien tarkistamis
 
 Sivu näyttää:
 
-- Nykyhetken aallonkorkeuden ja -jakson **oikeasta poijuhavainnosta** (Aaltopoiju.fi), + 3h historia
+- Nykyhetken aallonkorkeuden ja -jaksonpituuden **oikeasta poijuhavainnosta** (Aaltopoiju.fi), + 4h historia (5 havaintoikkunaa)
 - Ennusteen (Open-Meteo Marine + Forecast API) aallonkorkeudelle, -jaksolle, tuulelle ja merivedenkorkeudelle
 - Selkeän mukava/epämukava/vaarallista-luokituksen väreillä (vihreä/keltainen/punainen), joka ottaa huomioon Almejónin vesilinjan pituuden (7,3 m, kajuuttavene)
 - Tuulen nopeuden ja suunnan samoissa laatikoissa aaltotietojen kanssa (nyt-tilanne + jokaisessa tuntiennustelaatikossa pieni tuuli-ikoni)
 - Seuraavat tunnit tuntikohtaisina "chippeinä"
-- Seuraavat vuorokaudet Aamu/Päivä/Ilta-lohkoina (ei yötä)
+- Seuraavat 4 vuorokautta Aamu/Päivä/Ilta-lohkoina (ei yötä)
 
 ## Käyttöönotto GitHubissa
 

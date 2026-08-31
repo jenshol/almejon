@@ -46,7 +46,7 @@
   .now-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
   .fact{background:var(--chip-bg);border-radius:10px;padding:6px 4px;text-align:center}
   .fact .v{font-weight:700;font-size:.95rem}
-  .fact .l{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+  .fact .l{font-size:.56rem;color:var(--muted);text-transform:uppercase;letter-spacing:.01em;line-height:1.2;margin-top:1px}
 
   .hist-row{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;margin-top:2px}
   .hchip{flex:0 0 auto;min-width:54px;border-radius:9px;padding:6px 6px;text-align:center;
@@ -168,10 +168,11 @@ const LOCATIONS = {
   },
 };
 
-const COMPASS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+// Suomenkieliset ilmansuunnat (8 pääilmansuuntaa - riittävä tarkkuus tähän käyttöön)
+const COMPASS_FI = ["P","KO","I","KA","E","LO","L","LU"];
 function degToCompass(deg){
   if (deg == null || isNaN(deg)) return "–";
-  return COMPASS[Math.round(deg / 22.5) % 16];
+  return COMPASS_FI[Math.round(deg / 45) % 8];
 }
 function arrowRotation(deg){ return `rotate(${deg}deg)`; }
 
@@ -239,29 +240,29 @@ async function loadMarineForecast(lat, lon){
   const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}` +
     `&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,` +
     `wind_wave_height,wind_wave_period,sea_level_height_msl` +
-    `&timezone=Europe%2FHelsinki&forecast_days=3`;
+    `&timezone=Europe%2FHelsinki&forecast_days=6`;
   return fetchJson(url);
 }
 async function loadWindForecast(lat, lon){
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     `&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m` +
-    `&wind_speed_unit=ms&timezone=Europe%2FHelsinki&forecast_days=3`;
+    `&wind_speed_unit=ms&timezone=Europe%2FHelsinki&forecast_days=6`;
   return fetchJson(url);
 }
 
 function renderHistory(observations){
   if (!observations || !observations.length) return "<div class='hist-caption'>Ei historiadataa.</div>";
-  const last4 = observations.slice(-4);
-  const chips = last4.map((o, i) => {
-    const isNow = i === last4.length - 1;
+  const last5 = observations.slice(-5);
+  const chips = last5.map((o, i) => {
+    const isNow = i === last5.length - 1;
     return `<div class="hchip ${isNow ? "" : "faded"}">
       <div class="t">${isNow ? "NYT" : fmtHm(o.time)}</div>
       <div class="h">${o.height_m.toFixed(1)}m</div>
-      <div class="p">${o.period_s.toFixed(1)}s ${o.dir_compass ?? ""}</div>
+      <div class="p">${o.period_s.toFixed(1)}s ${degToCompass(o.dir_deg)}</div>
     </div>`;
   }).join("");
   return `<div class="hist-row">${chips}</div>
-    <div class="hist-caption">Poijuhavainto (Aaltopoiju.fi) — viim. 3 t taaksepäin → nyt</div>`;
+    <div class="hist-caption">Poijuhavainto (Aaltopoiju.fi) — aallon suunta ja jaksonpituus — viim. 4 t taaksepäin → nyt</div>`;
 }
 
 function renderForecastChips(hourly, windHourly, count){
@@ -314,7 +315,7 @@ function renderDayBuckets(hourly, windHourly){
     if (lvl) byDay[dayKey][part].push(lvl);
   });
 
-  const dayKeys = Object.keys(byDay).slice(0, 2);
+  const dayKeys = Object.keys(byDay).slice(0, 4);
   if (!dayKeys.length) return "<div class='hist-caption'>Ei tulevien vuorokausien dataa.</div>";
 
   const worst = (arr) => {
@@ -361,10 +362,10 @@ function renderLocationCard(locKey, buoyStation, marine, windData){
 
   const facts = latest ? `
     <div class="now-facts">
-      <div class="fact"><div class="v">${latest.height_m.toFixed(1)} m</div><div class="l">Aalto</div></div>
-      <div class="fact"><div class="v">${latest.period_s.toFixed(1)} s</div><div class="l">Jakso</div></div>
-      <div class="fact"><div class="v">${latest.dir_compass ?? degToCompass(latest.dir_deg)}</div><div class="l">Suunta</div></div>
-      <div class="fact"><div class="v">${latest.sea_temp_c != null ? latest.sea_temp_c.toFixed(1)+"°" : "–"}</div><div class="l">Vesi</div></div>
+      <div class="fact"><div class="v">${latest.height_m.toFixed(1)} m</div><div class="l">Aallonkorkeus</div></div>
+      <div class="fact"><div class="v">${latest.period_s.toFixed(1)} s</div><div class="l">Jaksonpituus</div></div>
+      <div class="fact"><div class="v">${degToCompass(latest.dir_deg)}</div><div class="l">Aallon suunta</div></div>
+      <div class="fact"><div class="v">${latest.sea_temp_c != null ? latest.sea_temp_c.toFixed(1)+"°" : "–"}</div><div class="l">Vedenlämpötila</div></div>
     </div>` : "";
 
   const history = renderHistory(obs);
