@@ -2,9 +2,11 @@ name: Päivitä aaltopoijudata
 
 on:
   schedule:
-    # Joka 30. minuutti. GitHubin cron-ajastin on "parhaan yrityksen" mukainen
-    # ja voi viivästyä ruuhka-aikoina - se on ok tähän käyttöön.
-    - cron: "*/30 * * * *"
+    # Joka 30. minuutti, mutta tasatuntien/puoliväli-huippujen (:00 ja :30)
+    # ohi - GitHubin oma dokumentaatio varoittaa, että juuri niinä hetkinä
+    # ajastettuja ajoja on ruuhkaisinta ja ne voivat viivästyä pahimmillaan
+    # tunteja. :07 ja :37 välttävät suurimman ruuhkan.
+    - cron: "7,37 * * * *"
   workflow_dispatch: {}   # mahdollistaa manuaalisen ajon Actions-välilehdeltä
 
 permissions:
