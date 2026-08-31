@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<title>Almejón — Suomenlahden ajokeli</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#ffffff; --text:#0b1220; --muted:#5b6675; --border:#e2e6ea;
+    --green-bg:#e4f7e9; --green-fg:#0d7a3a; --green-strong:#1fa851;
+    --yellow-bg:#fff6da; --yellow-fg:#8a6300; --yellow-strong:#e8ac00;
+    --red-bg:#fde6e6; --red-fg:#a5151a; --red-strong:#e0393f;
+    --accent:#0a6ebd; --chip-bg:#eef1f4;
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#0b1220; --card:#141d2b; --text:#eef2f6; --muted:#9aa8b8; --border:#243043;
+      --green-bg:#0f2b1c; --green-fg:#5fe08a; --green-strong:#2fbf63;
+      --yellow-bg:#2b2408; --yellow-fg:#f0c637; --yellow-strong:#e0ac00;
+      --red-bg:#301012; --red-fg:#ff8a8f; --red-strong:#e0393f;
+      --accent:#5cb3f0; --chip-bg:#1c2635;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  body{padding:12px 12px 40px;max-width:640px;margin:0 auto;}
+  h1{font-size:1.15rem;margin:4px 0 2px;}
+  .sub{color:var(--muted);font-size:.82rem;margin-bottom:14px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px;margin-bottom:12px;}
+  .card h2{font-size:1rem;margin:0 0 8px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .loc-title{display:flex;align-items:center;gap:8px}
+  .loc-coords{font-weight:400;color:var(--muted);font-size:.72rem}
+
+  .status-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .status-badge{border-radius:12px;padding:10px 14px;flex:1;display:flex;flex-direction:column;gap:2px}
+  .status-badge.green{background:var(--green-bg);color:var(--green-fg)}
+  .status-badge.yellow{background:var(--yellow-bg);color:var(--yellow-fg)}
+  .status-badge.red{background:var(--red-bg);color:var(--red-fg)}
+  .status-badge .big{font-size:1.3rem;font-weight:700;line-height:1.15}
+  .status-badge .small{font-size:.78rem;opacity:.85}
+
+  .now-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+  .fact{background:var(--chip-bg);border-radius:10px;padding:6px 4px;text-align:center}
+  .fact .v{font-weight:700;font-size:.95rem}
+  .fact .l{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+
+  .hist-row{display:flex;gap:6px;overflow-x:auto;padding:2px 0 4px;margin-top:2px}
+  .hchip{flex:0 0 auto;min-width:54px;border-radius:9px;padding:6px 6px;text-align:center;
+    background:var(--chip-bg);border:1px solid var(--border)}
+  .hchip.faded{opacity:.55}
+  .hchip .t{font-size:.62rem;color:var(--muted)}
+  .hchip .h{font-weight:700;font-size:.85rem;margin-top:1px}
+  .hchip .p{font-size:.62rem;color:var(--muted)}
+  .hist-caption{font-size:.68rem;color:var(--muted);margin-top:2px}
+
+  .fcast-row{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px}
+  .fchip{flex:0 0 auto;min-width:58px;border-radius:9px;padding:6px 6px;text-align:center;border:1px solid var(--border)}
+  .fchip.green{background:var(--green-bg);color:var(--green-fg)}
+  .fchip.yellow{background:var(--yellow-bg);color:var(--yellow-fg)}
+  .fchip.red{background:var(--red-bg);color:var(--red-fg)}
+  .fchip .t{font-size:.64rem;opacity:.8}
+  .fchip .h{font-weight:700;font-size:.86rem;margin-top:1px}
+  .fchip .p{font-size:.6rem;opacity:.8}
+  .fchip .w{font-size:.58rem;opacity:.75;margin-top:3px;display:flex;align-items:center;justify-content:center;gap:2px;border-top:1px solid var(--border);padding-top:3px}
+  .fchip .w .arrow{font-size:.7rem}
+
+  .windnow{background:var(--chip-bg);border-radius:10px;padding:7px 10px;display:flex;
+    align-items:center;gap:8px;font-size:.78rem;margin:8px 0}
+  .windnow .arrow{font-size:1rem}
+
+  .days{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+  .day{border:1px solid var(--border);border-radius:10px;padding:8px}
+  .day h3{margin:0 0 6px;font-size:.78rem;color:var(--muted);font-weight:600}
+  .daypart{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:.8rem}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
+  .dot.green{background:var(--green-strong)}
+  .dot.yellow{background:var(--yellow-strong)}
+  .dot.red{background:var(--red-strong)}
+
+  .windgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+  .arrow{display:inline-block;transition:transform .2s}
+
+  .tips{font-size:.85rem;line-height:1.5}
+  .tips ul{margin:6px 0 0;padding-left:1.1em}
+  .tips li{margin-bottom:6px}
+
+  .legend{display:flex;gap:14px;font-size:.72rem;color:var(--muted);margin:2px 0 10px;flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:5px}
+
+  footer{font-size:.68rem;color:var(--muted);line-height:1.6;margin-top:18px;padding-top:10px;border-top:1px solid var(--border)}
+  footer a{color:var(--accent)}
+  .stale{color:var(--red-fg);font-weight:600}
+
+  details.explain{font-size:.78rem;color:var(--muted);margin-top:6px}
+  details.explain summary{cursor:pointer;color:var(--accent)}
+  details.explain p{margin:6px 0}
+
+  .refresh-btn{background:var(--chip-bg);border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:8px 12px;font-size:.8rem;width:100%;margin-top:2px}
+</style>
+</head>
+<body>
+
+<h1>⛵ Almejón — ajokeli Suomenlahdella</h1>
+<div class="sub" id="topSub">Ladataan…</div>
+
+<div class="legend">
+  <span><span class="dot green"></span>Mukava</span>
+  <span><span class="dot yellow"></span>Epämukava</span>
+  <span><span class="dot red"></span>Vaarallinen</span>
+</div>
+
+<div id="cards"></div>
+
+<div class="card" id="seaLevelCard">
+  <h2>🌊 Merivedenkorkeus</h2>
+  <div id="seaLevelBody">Ladataan…</div>
+  <p style="font-size:.72rem;color:var(--muted);margin:6px 0 0">
+    Itämerellä ei ole juuri vuoksi- ja luodevaihtelua — korkeus vaihtelee lähinnä tuulen ja
+    ilmanpaineen mukaan. Alla oleva on karkea mallilukema; ennen matalikkoväyliä kannata
+    tarkistaa <a href="https://www.ilmatieteenlaitos.fi/meriveden-korkeus" target="_blank" rel="noopener">Ilmatieteen laitoksen virallinen merivedenkorkeus­ennuste</a>.
+  </p>
+</div>
+
+<details class="explain">
+  <summary>Miten mukava/epämukava/vaarallinen-arvio lasketaan?</summary>
+  <p>
+    Almejón on kajuuttavene (ei avovene), vesilinjan pituus n. 7,3 m — arvio on oma
+    nyrkkisääntö juuri tälle veneelle, ei virallinen standardi. Pähkinänkuoressa:
+    pidempi vesilinja kulkee tasaisemmin ja sietää enemmän korkeutta, joten kynnys on
+    asetettu avovenettä korkeammalle. Mutta <strong>jakso ratkaisee lopulta enemmän kuin
+    korkeus</strong>: lyhyt jakso (alle 3 s) tarkoittaa jyrkkää, nykivää aallokkoa, jota
+    vesilinjan pituus ei juuri auta vaimentamaan — vene hakkaa aaltoja vaikka korkeus
+    olisi pieni. Pitkä jakso (yli 5,5 s, loiva mainingki) taas tuntuu selvästi
+    mukavammalta samalla korkeudella, koska pitkä runko ehtii nousta ja laskea mukana.
+    Tuulen nopeus nostaa luokitusta, koska aallokko kasvaa tuulen perässä viiveellä.
+    Tarkat raja-arvot ovat <code>classify()</code>-funktiossa index.html:n lähdekoodissa.
+  </p>
+</details>
+
+<button class="refresh-btn" onclick="loadAll()">↻ Päivitä nyt</button>
+
+<footer>
+  <div><strong>Lähteet:</strong></div>
+  <div>• Havainto + 3 h historia: <a href="https://aaltopoiju.fi/" target="_blank" rel="noopener">Aaltopoiju.fi</a> (Suomenlahti &amp; Suomenlinna -poijut), haettu palvelimella n. 30 min välein GitHub Actionilla — <a id="buoyFetchedLink" href="#">tarkista viimeisin haku</a>.</div>
+  <div>• Aallokko-, tuuli- ja merivedenkorkeus­ennuste: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> (avoin data, haetaan suoraan selaimessa reaaliaikaisesti).</div>
+</footer>
+
+<script>
+const BOAT_LWL_M = 7.3; // Almejón, Scand Nautic 7800 - vesilinjan pituus (arvio)
+
+const LOCATIONS = {
+  avomeri: {
+    key: "avomeri",
+    title: "Avomeri — Suomenlahti",
+    coordsLabel: "n. 59.97°N 25.60°E (Kalbådagrund)",
+    lat: 59.973, lon: 25.602,
+  },
+  rannikko: {
+    key: "rannikko",
+    title: "Rannikko — Suomenlinna",
+    coordsLabel: "60.123°N 24.973°E",
+    lat: 60.1233, lon: 24.9725,
+  },
+};
+
+const COMPASS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+function degToCompass(deg){
+  if (deg == null || isNaN(deg)) return "–";
+  return COMPASS[Math.round(deg / 22.5) % 16];
+}
+function arrowRotation(deg){ return `rotate(${deg}deg)`; }
+
+/**
+ * Almejónin oma nyrkkisääntö aallon mukavuudelle. EI virallinen standardi -
+ * ks. selitys sivulla ("Miten arvio lasketaan?"). Palauttaa 'green'|'yellow'|'red'.
+ *
+ * Perusidea:
+ *  - Aallonkorkeus suhteessa veneen vesilinjaan (7.3 m) antaa perustason.
+ *  - Lyhyt jakso (< 3 s, jyrkkä paikallinen tuuliaallokko) pahentaa tilannetta.
+ *  - Pitkä jakso (>= 5.5 s, loiva mainingki) voi lieventää lievää tapausta.
+ *  - Kova tuuli pahentaa tilannetta riippumatta senhetkisestä aallonkorkeudesta,
+ *    koska aallokko seuraa tuulta viiveellä.
+ */
+function classify(heightM, periodS, windMs){
+  if (heightM == null || isNaN(heightM)) return null;
+  let level = heightM <= 0.4 ? 0 : (heightM <= 0.9 ? 1 : 2); // 0=green 1=yellow 2=red
+
+  if (periodS != null && !isNaN(periodS)){
+    if (periodS < 3.0) level = Math.min(2, level + 1);
+    else if (periodS >= 5.5) level = Math.max(0, level - (level < 2 ? 1 : 0));
+  }
+  if (windMs != null && !isNaN(windMs)){
+    if (windMs >= 17) level = 2;
+    else if (windMs >= 12) level = Math.min(2, level + 1);
+  }
+  return ["green","yellow","red"][level];
+}
+function levelLabel(level){
+  return {green:"Mukava", yellow:"Epämukava", red:"Vaarallinen", null:"–"}[level] ?? "–";
+}
+
+function fmtHm(iso){
+  const d = new Date(iso);
+  return d.toLocaleTimeString("fi-FI", {hour:"2-digit", minute:"2-digit"});
+}
+function minutesAgo(iso){
+  const diffMs = Date.now() - new Date(iso).getTime();
+  return Math.round(diffMs / 60000);
+}
+function dayPartLabel(hour){
+  if (hour >= 6 && hour <= 11) return "Aamu";
+  if (hour >= 12 && hour <= 17) return "Päivä";
+  return "Ilta"; // 18-23; yöaikaa (0-5) ei näytetä erikseen käyttäjän pyynnöstä
+}
+
+async function fetchJson(url, opts){
+  const res = await fetch(url, opts);
+  if (!res.ok) throw new Error(`HTTP ${res.status} @ ${url}`);
+  return res.json();
+}
+
+async function loadBuoyData(){
+  try{
+    // cache-buster estää selainta/Pagesia näyttämästä vanhaa JSON:ia liian pitkään
+    const data = await fetchJson(`data/buoy.json?t=${Date.now()}`);
+    return data;
+  }catch(e){
+    console.error("buoy.json-haku epäonnistui", e);
+    return null;
+  }
+}
+
+async function loadMarineForecast(lat, lon){
+  const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}` +
+    `&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,` +
+    `wind_wave_height,wind_wave_period,sea_level_height_msl` +
+    `&timezone=Europe%2FHelsinki&forecast_days=3`;
+  return fetchJson(url);
+}
+async function loadWindForecast(lat, lon){
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
+    `&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m` +
+    `&wind_speed_unit=ms&timezone=Europe%2FHelsinki&forecast_days=3`;
+  return fetchJson(url);
+}
+
+function renderHistory(observations){
+  if (!observations || !observations.length) return "<div class='hist-caption'>Ei historiadataa.</div>";
+  const last4 = observations.slice(-4);
+  const chips = last4.map((o, i) => {
+    const isNow = i === last4.length - 1;
+    return `<div class="hchip ${isNow ? "" : "faded"}">
+      <div class="t">${isNow ? "NYT" : fmtHm(o.time)}</div>
+      <div class="h">${o.height_m.toFixed(1)}m</div>
+      <div class="p">${o.period_s.toFixed(1)}s ${o.dir_compass ?? ""}</div>
+    </div>`;
+  }).join("");
+  return `<div class="hist-row">${chips}</div>
+    <div class="hist-caption">Poijuhavainto (Aaltopoiju.fi) — viim. 3 t taaksepäin → nyt</div>`;
+}
+
+function renderForecastChips(hourly, windHourly, count){
+  if (!hourly) return "<div class='hist-caption'>Ennuste ei saatavilla juuri nyt.</div>";
+  const now = Date.now();
+  const times = hourly.time;
+  let startIdx = times.findIndex(t => new Date(t).getTime() >= now);
+  if (startIdx === -1) startIdx = 0;
+  const idxs = [];
+  for (let i = startIdx; i < times.length && idxs.length < count; i++) idxs.push(i);
+
+  const chips = idxs.map(i => {
+    const h = hourly.wave_height?.[i];
+    const p = hourly.wave_period?.[i];
+    const wind = windHourly?.wind_speed_10m?.[i];
+    const windDir = windHourly?.wind_direction_10m?.[i];
+    const lvl = classify(h, p, wind);
+    const t = new Date(times[i]);
+    return `<div class="fchip ${lvl ?? ""}">
+      <div class="t">${t.toLocaleTimeString("fi-FI",{hour:"2-digit"})}</div>
+      <div class="h">${h != null ? h.toFixed(1)+"m" : "–"}</div>
+      <div class="p">${p != null ? p.toFixed(1)+"s" : "–"}</div>
+      <div class="w">
+        <span class="arrow" style="transform:${arrowRotation((windDir ?? 0)+180)}">↑</span>
+        ${wind != null ? Math.round(wind)+"m/s" : "–"}
+      </div>
+    </div>`;
+  }).join("");
+  return `<div class="fcast-row">${chips}</div>`;
+}
+
+function renderDayBuckets(hourly, windHourly){
+  if (!hourly) return "<div class='hist-caption'>Ennuste ei saatavilla.</div>";
+  const times = hourly.time.map(t => new Date(t));
+  const now = new Date();
+  const todayStr = now.toDateString();
+
+  // Ryhmittele (päivä -> {Aamu:[lvl..], Päivä:[..], Ilta:[..]})
+  const byDay = {};
+  times.forEach((t, i) => {
+    if (t.getTime() < now.getTime() - 3600e3) return; // ohita mennyt
+    const dayKey = t.toDateString();
+    if (dayKey === todayStr) return; // tämä päivä näytetään jo tuntikohtaisesti ylempänä
+    const part = dayPartLabel(t.getHours());
+    const h = hourly.wave_height?.[i];
+    const p = hourly.wave_period?.[i];
+    const wind = windHourly?.wind_speed_10m?.[i];
+    const lvl = classify(h, p, wind);
+    byDay[dayKey] ??= {Aamu: [], Päivä: [], Ilta: []};
+    if (lvl) byDay[dayKey][part].push(lvl);
+  });
+
+  const dayKeys = Object.keys(byDay).slice(0, 2);
+  if (!dayKeys.length) return "<div class='hist-caption'>Ei tulevien vuorokausien dataa.</div>";
+
+  const worst = (arr) => {
+    if (!arr.length) return null;
+    if (arr.includes("red")) return "red";
+    if (arr.includes("yellow")) return "yellow";
+    return "green";
+  };
+
+  const dayCards = dayKeys.map(dk => {
+    const d = new Date(dk);
+    const label = d.toLocaleDateString("fi-FI", {weekday:"short", day:"numeric", month:"numeric"});
+    const parts = ["Aamu","Päivä","Ilta"].map(p => {
+      const lvl = worst(byDay[dk][p]);
+      return `<div class="daypart"><span><span class="dot ${lvl ?? "green"}"></span>${p}</span>
+        <span>${levelLabel(lvl)}</span></div>`;
+    }).join("");
+    return `<div class="day"><h3>${label}</h3>${parts}</div>`;
+  }).join("");
+
+  return `<div class="days">${dayCards}</div>`;
+}
+
+function renderLocationCard(locKey, buoyStation, marine, windData){
+  const loc = LOCATIONS[locKey];
+  const obs = buoyStation?.observations ?? [];
+  const latest = obs.length ? obs[obs.length - 1] : null;
+
+  let nowLevel = null, ageMin = null, stale = false;
+  if (latest){
+    ageMin = minutesAgo(latest.time);
+    stale = ageMin > 90; // yli 1.5h vanha havainto - merkitään epäluotettavaksi
+    const windNow = windData?.hourly?.wind_speed_10m?.[0];
+    nowLevel = classify(latest.height_m, latest.period_s, windNow);
+  }
+
+  const badge = nowLevel
+    ? `<div class="status-badge ${nowLevel}">
+         <div class="big">${levelLabel(nowLevel)}</div>
+         <div class="small">${stale ? `<span class="stale">Havainto ${ageMin} min vanha - tarkista!</span>` : `Poijuhavainto ${ageMin} min sitten`}</div>
+       </div>`
+    : `<div class="status-badge yellow"><div class="big">Ei dataa</div>
+         <div class="small">Poijuhavaintoa ei saatu - katso ennuste alta</div></div>`;
+
+  const facts = latest ? `
+    <div class="now-facts">
+      <div class="fact"><div class="v">${latest.height_m.toFixed(1)} m</div><div class="l">Aalto</div></div>
+      <div class="fact"><div class="v">${latest.period_s.toFixed(1)} s</div><div class="l">Jakso</div></div>
+      <div class="fact"><div class="v">${latest.dir_compass ?? degToCompass(latest.dir_deg)}</div><div class="l">Suunta</div></div>
+      <div class="fact"><div class="v">${latest.sea_temp_c != null ? latest.sea_temp_c.toFixed(1)+"°" : "–"}</div><div class="l">Vesi</div></div>
+    </div>` : "";
+
+  const history = renderHistory(obs);
+  const forecastNow = renderForecastChips(marine?.hourly, windData?.hourly, 8);
+  const dayBuckets = renderDayBuckets(marine?.hourly, windData?.hourly);
+  const windNow = renderWindNow(windData);
+
+  return `
+    <div class="card">
+      <h2><span class="loc-title">${locKey === "avomeri" ? "🌐" : "🏝️"} ${loc.title}</span>
+        <span class="loc-coords">${loc.coordsLabel}</span></h2>
+      <div class="status-row">${badge}</div>
+      ${facts}
+      ${windNow}
+      ${history}
+      <div style="margin-top:10px;font-size:.72rem;color:var(--muted)">Seuraavat tunnit (aalto + tuuli, Open-Meteo-ennuste):</div>
+      ${forecastNow}
+      <div style="margin-top:6px;font-size:.72rem;color:var(--muted)">Seuraavat vuorokaudet:</div>
+      ${dayBuckets}
+    </div>`;
+}
+
+function renderWindNow(windData){
+  if (!windData) return `<div class="windnow">💨 Tuuli ei saatavilla</div>`;
+  const speed = windData.hourly.wind_speed_10m?.[0];
+  const gust = windData.hourly.wind_gusts_10m?.[0];
+  const dir = windData.hourly.wind_direction_10m?.[0];
+  return `<div class="windnow">💨
+    <span><strong>${speed != null ? speed.toFixed(0) : "–"} m/s</strong> (puuskat ${gust != null ? gust.toFixed(0) : "–"} m/s)</span>
+    <span class="arrow" style="transform:${arrowRotation((dir ?? 0)+180)}">↑</span>
+    <span>${degToCompass(dir)}</span>
+  </div>`;
+}
+
+function renderSeaLevel(marineAvomeri, marineRannikko){
+  function val(m){
+    const v = m?.hourly?.sea_level_height_msl?.[0];
+    return v != null ? `${v >= 0 ? "+" : ""}${v.toFixed(2)} m (MSL)` : "ei saatavilla";
+  }
+  return `<div>Avomeri: ${val(marineAvomeri)}</div><div>Rannikko: ${val(marineRannikko)}</div>`;
+}
+
+async function loadAll(){
+  document.getElementById("topSub").textContent = "Päivitetään…";
+  const cardsEl = document.getElementById("cards");
+
+  const buoyData = await loadBuoyData();
+
+  const [marineAvomeri, marineRannikko, windAvomeri, windRannikko] = await Promise.all([
+    loadMarineForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
+    loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
+    loadWindForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
+    loadWindForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
+  ]);
+
+  cardsEl.innerHTML =
+    renderLocationCard("avomeri", buoyData?.stations?.avomeri, marineAvomeri, windAvomeri) +
+    renderLocationCard("rannikko", buoyData?.stations?.rannikko, marineRannikko, windRannikko);
+
+  document.getElementById("seaLevelBody").innerHTML = renderSeaLevel(marineAvomeri, marineRannikko);
+
+  const genAt = buoyData?.generated_at;
+  document.getElementById("topSub").textContent = genAt
+    ? `Poijudata haettu: ${new Date(genAt).toLocaleString("fi-FI")}`
+    : "Poijudataa ei saatu ladattua.";
+  const link = document.getElementById("buoyFetchedLink");
+  if (genAt) link.textContent = new Date(genAt).toLocaleString("fi-FI");
+}
+
+loadAll();
+// Päivitä automaattisesti 10 min välein sivun ollessa auki
+setInterval(loadAll, 10 * 60 * 1000);
+</script>
+</body>
+</html>
