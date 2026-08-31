@@ -6,11 +6,11 @@ Sivu näyttää:
 
 - Nykyhetken aallonkorkeuden ja -jaksonpituuden **oikeasta poijuhavainnosta** (Aaltopoiju.fi), suuntanuolella + 4h historia (5 havaintoikkunaa)
 - Ennusteen (Open-Meteo Marine + Forecast API) aallonkorkeudelle, -jaksolle, tuulelle ja merivedenkorkeudelle
-- Ihan perus 3 vuorokauden sääennusteen (säätila pienellä ikonilla: aurinkoinen/puolipilvinen/pilvinen/sade/lumi/ukkonen + lämpötila), jaettuna samoihin Yö/Aamu/Päivä/Ilta-lohkoihin kuin aallokko, yhdestä pisteestä (Porkkala) — merivedenkorkeuden jälkeen
 - Selkeän hyvä/välttävä/huono-luokituksen väreillä (vihreä/keltainen/punainen) ja jatkuvan mukavuusindeksin (näkyy värillisessä pallossa), jotka ottavat huomioon Almejónin mitat ja painon (LWL 7,3 m, LOA 8,37 m, leveys 2,83 m, n. 2500 kg, puoliliukuva runko)
+- Vallitsevan hetken sään (ikoni + lämpötila, yhdestä pisteestä, Porkkala) suoraan kummankin alueen nyt-tilanteen laatikossa, poijuhavainnon vieressä
 - Tuulen nopeuden ja suunnan samoissa laatikoissa aaltotietojen kanssa (nyt-tilanne + jokaisessa tuntiennustelaatikossa pieni tuuli-ikoni)
 - Seuraavat tunnit tuntikohtaisina "chippeinä"
-- Seuraavat 4 vuorokautta Yö/Aamu/Päivä/Ilta-lohkoina (huomisen Aamu näkyy tarkoituksella myös tuntiennusteessa, koska veneellä voi olla yöpymässä vesillä valoisana kesäyönä)
+- Seuraavat 4 vuorokautta Yö/Aamu/Päivä/Ilta-lohkoina, joissa aallokon lisäksi näkyy myös kyseisen ajanjakson sää (ikoni + keskilämpötila, lohkon PAHIN säätila) — ei enää erillistä sääkorttia (huomisen Aamu näkyy tarkoituksella myös tuntiennusteessa, koska veneellä voi olla yöpymässä vesillä valoisana kesäyönä)
 
 ## Käyttöönotto GitHubissa
 
@@ -34,7 +34,7 @@ Kaikki säädöt ovat `index.html`:n `<script>`-osiossa:
 - `LOCATIONS` — koordinaatit ja nimet kahdelle alueelle. Näyttöjärjestys (rannikko ennen avomerta) määräytyy `loadAll()`-funktion `renderLocationCard(...)`-kutsujen järjestyksestä, ei `LOCATIONS`-objektista.
 - Poijujen URL:t ja asematarkistukset ovat `scripts/fetch_buoy.py`:ssä (`STATIONS`-sanakirja).
 - `WEATHER_LOCATION` — sään hakupiste (oletus: Porkkala). Yksi piste riittää, koska ilman lämpötila/pilvisyys ei juuri eroa Avomeren ja Rannikon välillä.
-- `WEATHER_CODES` / `weatherSeverityRank()` — WMO-säätilakoodien (Open-Meteon `weather_code`) käännökset suomeksi + ikoni, ja niiden karkea vakavuusjärjestys. Kun useampi tunti yhdistetään yhdeksi Yö/Aamu/Päivä/Ilta-lohkoksi, näytetään lohkon PAHIN sää (sama periaate kuin aallokko-luokittelussa) ja lämpötilan keskiarvo.
+- `WEATHER_CODES` / `weatherSeverityRank()` — WMO-säätilakoodien (Open-Meteon `weather_code`) käännökset suomeksi + ikoni, ja niiden karkea vakavuusjärjestys. Kun useampi tunti yhdistetään yhdeksi Yö/Aamu/Päivä/Ilta-lohkoksi, näytetään lohkon PAHIN sää (sama periaate kuin aallokko-luokittelussa) ja lämpötilan keskiarvo. `currentWeather()` poimii vallitsevan hetken säätilan (lähin tuleva/nykyinen tunti) nyt-tilanteen laatikkoon.
 - "↻ Päivitä nyt" -nappi ei vain piirrä samaa dataa uudelleen: se hakee poijudatan uudelleen (`data/buoy.json`, cache-buster-parametrilla) ja tekee Open-Meteo-ennusteista uudet HTTP-pyynnöt (`&_=Date.now()`-parametri estää selaimen välimuistin) — eli tarkistaa aidosti onko ennuste päivittynyt. Sama tapahtuu automaattisesti 10 min välein.
 
 ## Tietolähteet

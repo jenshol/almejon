@@ -36,12 +36,16 @@
   .loc-coords{font-weight:400;color:var(--muted);font-size:.72rem}
 
   .status-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-  .status-badge{border-radius:12px;padding:10px 14px;flex:1;display:flex;flex-direction:column;gap:2px}
+  .status-badge{border-radius:12px;padding:10px 14px;flex:1;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
   .status-badge.green{background:var(--green-bg);color:var(--green-fg)}
   .status-badge.yellow{background:var(--yellow-bg);color:var(--yellow-fg)}
   .status-badge.red{background:var(--red-bg);color:var(--red-fg)}
+  .sb-left{display:flex;flex-direction:column;gap:2px}
   .status-badge .big{font-size:1.3rem;font-weight:700;line-height:1.15}
   .status-badge .small{font-size:.78rem;opacity:.85}
+  .sb-weather{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+  .sb-weather .icon{font-size:1.7rem;line-height:1}
+  .sb-weather .temp{font-size:.85rem;font-weight:700;margin-top:1px}
 
   .now-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
   .fact{background:var(--chip-bg);border-radius:10px;padding:6px 4px;text-align:center}
@@ -127,11 +131,6 @@
 <div class="card" id="seaLevelCard">
   <h2>🌊 Merivedenkorkeus</h2>
   <div id="seaLevelBody">Ladataan…</div>
-</div>
-
-<div class="card" id="weatherCard">
-  <h2>🌤️ Sää — Porkkala (3 vrk)</h2>
-  <div id="weatherBody">Ladataan…</div>
 </div>
 
 <button class="refresh-btn" onclick="loadAll()">↻ Päivitä nyt</button>
@@ -480,11 +479,19 @@ function renderForecastChips(hourly, windHourly, cutoffTime){
   return `<div class="fcast-row">${chips}</div>`;
 }
 
-function renderDayBuckets(hourly, windHourly){
+function renderDayBuckets(hourly, windHourly, weatherHourly){
   if (!hourly) return "<div class='hist-caption'>Ennuste ei saatavilla.</div>";
-  const times = hourly.time.map(t => new Date(t));
+  const timeStrs = hourly.time;
+  const times = timeStrs.map(t => new Date(t));
   const now = new Date();
   const todayStr = now.toDateString();
+
+  // Säädata (WEATHER_LOCATION/Porkkala) haetaan omalla tuntisarjallaan - rakennetaan
+  // hakutaulu aikaleiman mukaan, jotta se saadaan yhdistettyä aallokkotuntien kanssa.
+  const weatherByTime = new Map();
+  weatherHourly?.time?.forEach((t, i) => {
+    weatherByTime.set(t, { code: weatherHourly.weather_code?.[i], temp: weatherHourly.temperature_2m?.[i] });
+  });
 
   // Ryhmittele (päivä -> {Yö:[..], Aamu:[..], Päivä:[..], Ilta:[..]}). Tämä päivä
   // näytetään jo tuntikohtaisesti ylempänä eikä toisteta tässä, mutta HUOMISEN aamu
@@ -501,8 +508,9 @@ function renderDayBuckets(hourly, windHourly){
     const p = hourly.wave_period?.[i];
     const wind = windHourly?.wind_speed_10m?.[i];
     const c = classify(h, p, wind);
+    const w = weatherByTime.get(timeStrs[i]);
     byDay[dayKey] ??= {Yö: [], Aamu: [], Päivä: [], Ilta: []};
-    if (c) byDay[dayKey][part].push({score: c.score, h});
+    if (c) byDay[dayKey][part].push({score: c.score, h, wcode: w?.code, wtemp: w?.temp});
   });
 
   const dayKeys = Object.keys(byDay).slice(0, 4);
@@ -516,6 +524,12 @@ function renderDayBuckets(hourly, windHourly){
     const heights = arr.map(x => x.h).filter(h => h != null && !isNaN(h));
     return heights.length ? Math.max(...heights) : null;
   };
+  const worstWeatherCode = (arr) => arr.reduce((best, e) =>
+    weatherSeverityRank(e.wcode) > weatherSeverityRank(best) ? e.wcode : best, null);
+  const avgTemp = (arr) => {
+    const temps = arr.map(x => x.wtemp).filter(t => t != null && !isNaN(t));
+    return temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : null;
+  };
 
   const dayCards = dayKeys.map(dk => {
     const d = new Date(dk);
@@ -527,9 +541,11 @@ function renderDayBuckets(hourly, windHourly){
       const sc = worstScore(entries);
       const lvl = levelFromScore(sc);
       const mh = maxHeight(entries);
+      const [wicon, wtext] = weatherCodeInfo(worstWeatherCode(entries));
+      const wtemp = avgTemp(entries);
       // Ei enää Hyvä/Välttävä/Huono-sanaa - väri ja indeksiluku pallossa kertovat saman.
       return `<div class="daypart"><span>${scoreDot(lvl, sc, 18)}${p}</span>
-        <span>${mh != null ? mh.toFixed(1)+" m" : "–"}</span></div>`;
+        <span><span title="${wtext}">${wicon}</span> ${wtemp != null ? Math.round(wtemp)+"°" : ""} ${mh != null ? mh.toFixed(1)+" m" : "–"}</span></div>`;
     }).filter(Boolean).join("");
     return `<div class="day"><h3>${label}</h3>${parts}</div>`;
   }).join("");
@@ -537,7 +553,19 @@ function renderDayBuckets(hourly, windHourly){
   return `<div class="days">${dayCards}</div>`;
 }
 
-function renderLocationCard(locKey, buoyStation, marine, windData){
+// Vallitsevan hetken sää (lähin tuleva/nykyinen tunti WEATHER_LOCATIONista) - näytetään
+// nyt-tilanteen laatikossa ikonina + lämpötilana, samaan tapaan kuin tuuli-ikoni jo on.
+function currentWeather(weatherHourly){
+  if (!weatherHourly?.time?.length) return null;
+  const now = Date.now();
+  let idx = weatherHourly.time.findIndex(t => new Date(t).getTime() >= now);
+  if (idx === -1) idx = 0;
+  const [icon, text] = weatherCodeInfo(weatherHourly.weather_code?.[idx]);
+  const temp = weatherHourly.temperature_2m?.[idx];
+  return { icon, text, temp };
+}
+
+function renderLocationCard(locKey, buoyStation, marine, windData, weatherData){
   const loc = LOCATIONS[locKey];
   const obs = buoyStation?.observations ?? [];
   const latest = obs.length ? obs[obs.length - 1] : null;
@@ -555,13 +583,25 @@ function renderLocationCard(locKey, buoyStation, marine, windData){
     nowScore = c?.score;
   }
 
+  const w = currentWeather(weatherData?.hourly);
+  const weatherBlock = w ? `<div class="sb-weather" title="${w.text}">
+      <div class="icon">${w.icon}</div>
+      <div class="temp">${w.temp != null ? Math.round(w.temp)+"°" : "–"}</div>
+    </div>` : "";
+
   const badge = nowLevel
     ? `<div class="status-badge ${nowLevel}">
-         <div class="big">${scoreDot(nowLevel, nowScore, 24)}${levelLabel(nowLevel)}</div>
-         <div class="small">${stale ? `<span class="stale">Havainto ${ageMin} min vanha - tarkista!</span>` : `Poijuhavainto ${ageMin} min sitten`}</div>
+         <div class="sb-left">
+           <div class="big">${scoreDot(nowLevel, nowScore, 24)}${levelLabel(nowLevel)}</div>
+           <div class="small">${stale ? `<span class="stale">Havainto ${ageMin} min vanha - tarkista!</span>` : `Poijuhavainto ${ageMin} min sitten`}</div>
+         </div>
+         ${weatherBlock}
        </div>`
-    : `<div class="status-badge yellow"><div class="big">Ei dataa</div>
-         <div class="small">Poijuhavaintoa ei saatu - katso ennuste alta</div></div>`;
+    : `<div class="status-badge yellow">
+         <div class="sb-left"><div class="big">Ei dataa</div>
+         <div class="small">Poijuhavaintoa ei saatu - katso ennuste alta</div></div>
+         ${weatherBlock}
+       </div>`;
 
   const facts = latest ? `
     <div class="now-facts">
@@ -579,7 +619,7 @@ function renderLocationCard(locKey, buoyStation, marine, windData){
   const now = new Date();
   const nextMorningCutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 12, 0, 0, 0);
   const forecastNow = renderForecastChips(marine?.hourly, windData?.hourly, nextMorningCutoff);
-  const dayBuckets = renderDayBuckets(marine?.hourly, windData?.hourly);
+  const dayBuckets = renderDayBuckets(marine?.hourly, windData?.hourly, weatherData?.hourly);
   const windNow = renderWindNow(windData);
 
   return `
@@ -618,52 +658,6 @@ function renderSeaLevel(marineAvomeri, marineRannikko){
   return `<div>Avomeri: ${val(marineAvomeri)}</div><div>Rannikko: ${val(marineRannikko)}</div>`;
 }
 
-// Ihan perus 3 vuorokauden sääennuste, jaettuna samoihin Yö/Aamu/Päivä/Ilta-lohkoihin
-// kuin aallokko-vuorokausikortit (dayPartLabel()) - yhdestä pisteestä (WEATHER_LOCATION),
-// koska ilman lämpötila/pilvisyys ei juuri eroa alueiden välillä. Lohkon sää = pahin
-// tunneittainen säätila lohkon sisällä (weatherSeverityRank), lämpötila = lohkon keskiarvo.
-function renderWeatherForecast(hourly){
-  if (!hourly || !hourly.time?.length) return "<div class='hist-caption'>Sääennuste ei saatavilla.</div>";
-  const times = hourly.time.map(t => new Date(t));
-  const now = new Date();
-
-  const byDay = {};
-  times.forEach((t, i) => {
-    if (t.getTime() < now.getTime() - 3600e3) return; // ohita mennyt
-    const dayKey = t.toDateString();
-    const part = dayPartLabel(t.getHours());
-    byDay[dayKey] ??= {Yö: [], Aamu: [], Päivä: [], Ilta: []};
-    byDay[dayKey][part].push({ code: hourly.weather_code?.[i], temp: hourly.temperature_2m?.[i] });
-  });
-
-  const dayKeys = Object.keys(byDay).slice(0, 3);
-  if (!dayKeys.length) return "<div class='hist-caption'>Sääennuste ei saatavilla.</div>";
-
-  const worstEntry = (arr) => arr.reduce((best, e) =>
-    weatherSeverityRank(e.code) > weatherSeverityRank(best?.code) ? e : best, arr[0]);
-  const avgTemp = (arr) => {
-    const temps = arr.map(x => x.temp).filter(t => t != null && !isNaN(t));
-    return temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : null;
-  };
-
-  const dayCards = dayKeys.map(dk => {
-    const d = new Date(dk);
-    const label = d.toLocaleDateString("fi-FI", {weekday:"short", day:"numeric", month:"numeric"});
-    const parts = ["Yö","Aamu","Päivä","Ilta"].map(p => {
-      const entries = byDay[dk][p];
-      if (!entries.length) return null;
-      const worst = worstEntry(entries);
-      const [icon, text] = weatherCodeInfo(worst?.code);
-      const temp = avgTemp(entries);
-      return `<div class="daypart"><span title="${text}">${icon} ${p}</span>
-        <span>${temp != null ? Math.round(temp)+"°" : "–"}</span></div>`;
-    }).filter(Boolean).join("");
-    return `<div class="day"><h3>${label}</h3>${parts}</div>`;
-  }).join("");
-
-  return `<div class="days">${dayCards}</div>`;
-}
-
 async function loadAll(){
   document.getElementById("topSub").textContent = "Päivitetään…";
   const cardsEl = document.getElementById("cards");
@@ -679,11 +673,10 @@ async function loadAll(){
   ]);
 
   cardsEl.innerHTML =
-    renderLocationCard("rannikko", buoyData?.stations?.rannikko, marineRannikko, windRannikko) +
-    renderLocationCard("avomeri", buoyData?.stations?.avomeri, marineAvomeri, windAvomeri);
+    renderLocationCard("rannikko", buoyData?.stations?.rannikko, marineRannikko, windRannikko, weatherData) +
+    renderLocationCard("avomeri", buoyData?.stations?.avomeri, marineAvomeri, windAvomeri, weatherData);
 
   document.getElementById("seaLevelBody").innerHTML = renderSeaLevel(marineAvomeri, marineRannikko);
-  document.getElementById("weatherBody").innerHTML = renderWeatherForecast(weatherData?.hourly);
 
   const genAt = buoyData?.generated_at;
   document.getElementById("topSub").textContent = genAt
