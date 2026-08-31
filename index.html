@@ -43,9 +43,11 @@
   .sb-left{display:flex;flex-direction:column;gap:2px}
   .status-badge .big{font-size:1.3rem;font-weight:700;line-height:1.15}
   .status-badge .small{font-size:.78rem;opacity:.85}
-  .sb-weather{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
-  .sb-weather .icon{font-size:1.7rem;line-height:1}
-  .sb-weather .temp{font-size:.85rem;font-weight:700;margin-top:1px}
+  .sb-weather{display:flex;gap:8px;flex-shrink:0}
+  .sb-weather .wpart{display:flex;flex-direction:column;align-items:center}
+  .sb-weather .lbl{font-size:.55rem;text-transform:uppercase;opacity:.75;letter-spacing:.02em}
+  .sb-weather .icon{font-size:1.15rem;line-height:1;margin-top:1px}
+  .sb-weather .temp{font-size:.68rem;font-weight:700;margin-top:1px}
 
   .now-facts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
   .fact{background:var(--chip-bg);border-radius:10px;padding:6px 4px;text-align:center}
@@ -390,7 +392,7 @@ async function loadWeatherForecast(lat, lon){
   // Tuntikohtainen sää (säätila + ilman lämpötila) yhdestä pisteestä (WEATHER_LOCATION) -
   // ei omaa aallokko-/tuulisijaintia kohden, koska ilma ei juuri eroa niiden välillä.
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-    `&hourly=weather_code,temperature_2m&timezone=Europe%2FHelsinki&forecast_days=4&_=${Date.now()}`;
+    `&hourly=weather_code,temperature_2m&timezone=Europe%2FHelsinki&forecast_days=6&_=${Date.now()}`;
   return fetchJson(url);
 }
 
@@ -544,8 +546,9 @@ function renderDayBuckets(hourly, windHourly, weatherHourly){
       const [wicon, wtext] = weatherCodeInfo(worstWeatherCode(entries));
       const wtemp = avgTemp(entries);
       // Ei enää Hyvä/Välttävä/Huono-sanaa - väri ja indeksiluku pallossa kertovat saman.
+      // Järjestys: pallo+indeksi, Yö/Aamu/jne, aallonkorkeus, sääikoni, ilmanlämpötila.
       return `<div class="daypart"><span>${scoreDot(lvl, sc, 18)}${p}</span>
-        <span><span title="${wtext}">${wicon}</span> ${wtemp != null ? Math.round(wtemp)+"°" : ""} ${mh != null ? mh.toFixed(1)+" m" : "–"}</span></div>`;
+        <span>${mh != null ? mh.toFixed(1)+" m" : "–"} <span title="${wtext}">${wicon}</span> ${wtemp != null ? Math.round(wtemp)+"°" : ""}</span></div>`;
     }).filter(Boolean).join("");
     return `<div class="day"><h3>${label}</h3>${parts}</div>`;
   }).join("");
@@ -553,16 +556,30 @@ function renderDayBuckets(hourly, windHourly, weatherHourly){
   return `<div class="days">${dayCards}</div>`;
 }
 
-// Vallitsevan hetken sää (lähin tuleva/nykyinen tunti WEATHER_LOCATIONista) - näytetään
-// nyt-tilanteen laatikossa ikonina + lämpötilana, samaan tapaan kuin tuuli-ikoni jo on.
-function currentWeather(weatherHourly){
-  if (!weatherHourly?.time?.length) return null;
-  const now = Date.now();
-  let idx = weatherHourly.time.findIndex(t => new Date(t).getTime() >= now);
-  if (idx === -1) idx = 0;
-  const [icon, text] = weatherCodeInfo(weatherHourly.weather_code?.[idx]);
-  const temp = weatherHourly.temperature_2m?.[idx];
-  return { icon, text, temp };
+// Kuluvan päivän Aamu/Päivä/Ilta-sää (WEATHER_LOCATIONista) - näytetään kolmena pienenä
+// ikoni+lämpötila-lohkona nyt-tilanteen laatikossa, samalla PAHIN-sää + keskilämpötila
+// -periaatteella kuin tulevien vuorokausien lohkoissa. Yötä ei näytetä, koska se on jo ohi.
+function todayWeatherParts(weatherHourly){
+  const parts = ["Aamu", "Päivä", "Ilta"];
+  if (!weatherHourly?.time?.length) return parts.map(() => null);
+  const todayStr = new Date().toDateString();
+  const byPart = {};
+  weatherHourly.time.forEach((t, i) => {
+    const d = new Date(t);
+    if (d.toDateString() !== todayStr) return;
+    const part = dayPartLabel(d.getHours());
+    (byPart[part] ??= []).push({ code: weatherHourly.weather_code?.[i], temp: weatherHourly.temperature_2m?.[i] });
+  });
+  return parts.map(p => {
+    const entries = byPart[p];
+    if (!entries?.length) return null;
+    const code = entries.reduce((best, e) =>
+      weatherSeverityRank(e.code) > weatherSeverityRank(best) ? e.code : best, null);
+    const [icon, text] = weatherCodeInfo(code);
+    const temps = entries.map(e => e.temp).filter(t => t != null && !isNaN(t));
+    const temp = temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : null;
+    return { label: p, icon, text, temp };
+  });
 }
 
 function renderLocationCard(locKey, buoyStation, marine, windData, weatherData){
@@ -583,10 +600,13 @@ function renderLocationCard(locKey, buoyStation, marine, windData, weatherData){
     nowScore = c?.score;
   }
 
-  const w = currentWeather(weatherData?.hourly);
-  const weatherBlock = w ? `<div class="sb-weather" title="${w.text}">
-      <div class="icon">${w.icon}</div>
-      <div class="temp">${w.temp != null ? Math.round(w.temp)+"°" : "–"}</div>
+  const todayParts = todayWeatherParts(weatherData?.hourly);
+  const weatherBlock = todayParts.some(Boolean) ? `<div class="sb-weather">
+      ${todayParts.map(p => p ? `<div class="wpart" title="${p.text}">
+          <div class="lbl">${p.label}</div>
+          <div class="icon">${p.icon}</div>
+          <div class="temp">${p.temp != null ? Math.round(p.temp)+"°" : "–"}</div>
+        </div>` : "").join("")}
     </div>` : "";
 
   const badge = nowLevel
