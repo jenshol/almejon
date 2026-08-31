@@ -75,7 +75,8 @@
   .days{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
   .day{border:1px solid var(--border);border-radius:10px;padding:8px}
   .day h3{margin:0 0 6px;font-size:.78rem;color:var(--muted);font-weight:600}
-  .daypart{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:.8rem}
+  .daypart{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:.76rem;gap:6px}
+  .daypart>span:last-child{white-space:nowrap;text-align:right}
   .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
   .dot.green{background:var(--green-strong)}
   .dot.yellow{background:var(--yellow-strong)}
@@ -312,7 +313,7 @@ function renderDayBuckets(hourly, windHourly){
     const wind = windHourly?.wind_speed_10m?.[i];
     const lvl = classify(h, p, wind);
     byDay[dayKey] ??= {Aamu: [], Päivä: [], Ilta: []};
-    if (lvl) byDay[dayKey][part].push(lvl);
+    if (lvl) byDay[dayKey][part].push({lvl, h});
   });
 
   const dayKeys = Object.keys(byDay).slice(0, 4);
@@ -320,18 +321,25 @@ function renderDayBuckets(hourly, windHourly){
 
   const worst = (arr) => {
     if (!arr.length) return null;
-    if (arr.includes("red")) return "red";
-    if (arr.includes("yellow")) return "yellow";
+    const lvls = arr.map(x => x.lvl);
+    if (lvls.includes("red")) return "red";
+    if (lvls.includes("yellow")) return "yellow";
     return "green";
+  };
+  const maxHeight = (arr) => {
+    const heights = arr.map(x => x.h).filter(h => h != null && !isNaN(h));
+    return heights.length ? Math.max(...heights) : null;
   };
 
   const dayCards = dayKeys.map(dk => {
     const d = new Date(dk);
     const label = d.toLocaleDateString("fi-FI", {weekday:"short", day:"numeric", month:"numeric"});
     const parts = ["Aamu","Päivä","Ilta"].map(p => {
-      const lvl = worst(byDay[dk][p]);
+      const entries = byDay[dk][p];
+      const lvl = worst(entries);
+      const mh = maxHeight(entries);
       return `<div class="daypart"><span><span class="dot ${lvl ?? "green"}"></span>${p}</span>
-        <span>${levelLabel(lvl)}</span></div>`;
+        <span>${mh != null ? mh.toFixed(1)+" m, " : ""}${levelLabel(lvl)}</span></div>`;
     }).join("");
     return `<div class="day"><h3>${label}</h3>${parts}</div>`;
   }).join("");
