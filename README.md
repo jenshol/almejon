@@ -6,7 +6,7 @@ Sivu näyttää:
 
 - Nykyhetken aallonkorkeuden ja -jaksonpituuden **oikeasta poijuhavainnosta** (Aaltopoiju.fi), + 4h historia (5 havaintoikkunaa)
 - Ennusteen (Open-Meteo Marine + Forecast API) aallonkorkeudelle, -jaksolle, tuulelle ja merivedenkorkeudelle
-- Selkeän mukava/epämukava/vaarallista-luokituksen väreillä (vihreä/keltainen/punainen), joka ottaa huomioon Almejónin vesilinjan pituuden (7,3 m, kajuuttavene)
+- Selkeän hyvä/välttävä/huono-luokituksen väreillä (vihreä/keltainen/punainen), joka ottaa huomioon Almejónin vesilinjan pituuden (7,3 m, kajuuttavene)
 - Tuulen nopeuden ja suunnan samoissa laatikoissa aaltotietojen kanssa (nyt-tilanne + jokaisessa tuntiennustelaatikossa pieni tuuli-ikoni)
 - Seuraavat tunnit tuntikohtaisina "chippeinä"
 - Seuraavat 4 vuorokautta Aamu/Päivä/Ilta-lohkoina (ei yötä)
@@ -24,7 +24,7 @@ Sivu näyttää:
 Kaikki säädöt ovat `index.html`:n `<script>`-osiossa:
 
 - `BOAT_LWL_M` — Almejónin vesilinjan pituus (nyt 7,3 m). Vaikuttaa `classify()`-funktion kynnysarvoihin.
-- `classify(heightM, periodS, windMs)` — mukava/epämukava/vaarallista-logiikka, oma heuristiikka kajuuttaveneelle. Selitys "pähkinänkuoressa" on myös suoraan sivulla avattavassa "Miten arvio lasketaan?" -osiossa.
+- `classify(heightM, periodS, windMs)` — hyvä/välttävä/huono-logiikka, oma heuristiikka kajuuttaveneelle. Aallonkorkeuden perustaso lasketaan suhteessa `BOAT_LWL_M`-vakioon (≤6 % → hyvä, ≤12 % → välttävä, muuten huono); jakso (alle 3,0 s huonontaa, yli 5,5 s parantaa) ja tuuli (12/17 m/s) voivat vielä siirtää tasoa. Täysi selitys ja esimerkkilasku ovat sivulla avattavassa "Miten arvio lasketaan?" -osiossa.
 - `LOCATIONS` — koordinaatit ja nimet kahdelle alueelle.
 - Poijujen URL:t ja asematarkistukset ovat `scripts/fetch_buoy.py`:ssä (`STATIONS`-sanakirja).
 

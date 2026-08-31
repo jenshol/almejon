@@ -110,9 +110,9 @@
 <div class="sub" id="topSub">Ladataan…</div>
 
 <div class="legend">
-  <span><span class="dot green"></span>Mukava</span>
-  <span><span class="dot yellow"></span>Epämukava</span>
-  <span><span class="dot red"></span>Vaarallinen</span>
+  <span><span class="dot green"></span>Hyvä</span>
+  <span><span class="dot yellow"></span>Välttävä</span>
+  <span><span class="dot red"></span>Huono</span>
 </div>
 
 <div id="cards"></div>
@@ -128,18 +128,44 @@
 </div>
 
 <details class="explain">
-  <summary>Miten mukava/epämukava/vaarallinen-arvio lasketaan?</summary>
+  <summary>Miten hyvä/välttävä/huono-arvio lasketaan?</summary>
   <p>
-    Almejón on kajuuttavene (ei avovene), vesilinjan pituus n. 7,3 m — arvio on oma
-    nyrkkisääntö juuri tälle veneelle, ei virallinen standardi. Pähkinänkuoressa:
-    pidempi vesilinja kulkee tasaisemmin ja sietää enemmän korkeutta, joten kynnys on
-    asetettu avovenettä korkeammalle. Mutta <strong>jakso ratkaisee lopulta enemmän kuin
-    korkeus</strong>: lyhyt jakso (alle 3 s) tarkoittaa jyrkkää, nykivää aallokkoa, jota
-    vesilinjan pituus ei juuri auta vaimentamaan — vene hakkaa aaltoja vaikka korkeus
-    olisi pieni. Pitkä jakso (yli 5,5 s, loiva mainingki) taas tuntuu selvästi
-    mukavammalta samalla korkeudella, koska pitkä runko ehtii nousta ja laskea mukana.
-    Tuulen nopeus nostaa luokitusta, koska aallokko kasvaa tuulen perässä viiveellä.
-    Tarkat raja-arvot ovat <code>classify()</code>-funktiossa index.html:n lähdekoodissa.
+    Almejón on kajuuttavene (ei avovene), vesilinjan pituus (LWL) n. 7,3 m — arvio on
+    oma nyrkkisääntö juuri tälle veneelle, ei virallinen standardi. Laskenta tapahtuu
+    kolmessa vaiheessa:
+  </p>
+  <p>
+    <strong>1) Perustaso aallonkorkeudesta suhteessa vesilinjaan.</strong> Aallonkorkeutta
+    ei verrata kiinteään metrilukemaan vaan LWL:n prosenttiosuuteen — pidempi vesilinja
+    kulkee tasaisemmin ja sietää siis enemmän senttejä aaltoa:
+  </p>
+  <table style="width:100%;border-collapse:collapse;font-size:.76rem;margin:4px 0 8px">
+    <tr style="border-bottom:1px solid var(--border)"><td style="padding:3px 4px 3px 0">Aalto / LWL ≤ 6 %</td><td>→ Hyvä <em>(Almejónille ≈ 0,44 m)</em></td></tr>
+    <tr style="border-bottom:1px solid var(--border)"><td style="padding:3px 4px 3px 0">Aalto / LWL ≤ 12 %</td><td>→ Välttävä <em>(≈ 0,88 m)</em></td></tr>
+    <tr><td style="padding:3px 4px 3px 0">Aalto / LWL &gt; 12 %</td><td>→ Huono</td></tr>
+  </table>
+  <p>
+    <strong>2) Jakso voi nostaa tai laskea tasoa yhdellä pykälällä — tämä ei riipu
+    veneen koosta.</strong> Alle 3,0 s jakso tarkoittaa jyrkkää, nykivää paikallista
+    tuuliaallokkoa, jota vesilinjan pituus ei juuri auta vaimentamaan: <em>vene hakkaa
+    aaltoja vaikka korkeus olisi pieni</em>, joten taso huononee yhdellä pykälällä
+    (esim. 0,3 m aalto olisi korkeuden perusteella "Hyvä", mutta jos jakso on vain
+    2,0 s, tulos on "Välttävä" — juuri jakson jyrkkyys, ei korkeus, ratkaisee). Vähintään
+    5,5 s jakso taas on loiva mainingki, joka tuntuu selvästi paremmalta samalla
+    korkeudella, ja parantaa tasoa yhdellä pykälällä (paitsi jos taso on jo "Huono"
+    korkeuden takia — pitkä jakso ei tee isosta aallosta pientä).
+  </p>
+  <p>
+    <strong>3) Tuuli voi vielä nostaa tasoa.</strong> Aallokko kasvaa tuulen perässä
+    viiveellä, joten kova tuuli ennakoi pahenevaa keliä ennen kuin aallot ehtivät
+    kasvaa: 12 m/s huonontaa yhdellä pykälällä, 17 m/s tai enemmän pakottaa suoraan
+    "Huono"-tasolle riippumatta aallosta.
+  </p>
+  <p>
+    Tarkat vakiot (<code>HEIGHT_RATIO_HYVA_MAX</code>, <code>HEIGHT_RATIO_VALTTAVA_MAX</code>,
+    <code>PERIOD_JYRKKA_S</code>, <code>PERIOD_LOIVA_S</code>, <code>WIND_VALTTAVA_MS</code>,
+    <code>WIND_HUONO_MS</code>) ja koko <code>classify()</code>-funktio ovat
+    index.html:n lähdekoodissa muokattavissa.
   </p>
 </details>
 
@@ -177,33 +203,51 @@ function degToCompass(deg){
 }
 function arrowRotation(deg){ return `rotate(${deg}deg)`; }
 
+// Aallonkorkeuden PERUSTASO lasketaan suhteessa Almejónin vesilinjan pituuteen
+// (BOAT_LWL_M) - ei kiinteänä metrilukemana. Näin luku mukautuu automaattisesti,
+// jos BOAT_LWL_M-vakiota joskus muutetaan (esim. venevaihdon yhteydessä).
+// Nyrkkisääntö (ei virallinen standardi, ks. "Miten arvio lasketaan?" sivulla):
+//   aallonkorkeus / vesilinja <= 6 %   -> Hyvä
+//   aallonkorkeus / vesilinja <= 12 %  -> Välttävä
+//   aallonkorkeus / vesilinja > 12 %   -> Huono
+// Almejónille (7,3 m) tämä tarkoittaa n. 0,44 m ja 0,88 m korkeuksia rajoina.
+const HEIGHT_RATIO_HYVA_MAX = 0.06;
+const HEIGHT_RATIO_VALTTAVA_MAX = 0.12;
+
+// Jakson (aallon pituuden) vaikutus EI riipu veneen koosta - se on kiinteä,
+// koska lyhyt jakso tarkoittaa jyrkkää, nykivää aallokkoa joka hakkaa venettä
+// korkeudesta riippumatta, ja pitkä jakso on loiva mainingki joka tuntuu
+// paremmalta samalla korkeudella (runko ehtii nousta ja laskea mukana).
+const PERIOD_JYRKKA_S = 3.0;   // alle tämän: aallokko on jyrkkää -> huonontaa yhdellä tasolla
+const PERIOD_LOIVA_S = 5.5;    // vähintään tämän: loiva mainingki -> parantaa yhdellä tasolla
+
+// Tuuli: aallokko kasvaa tuulen perässä viiveellä, joten kova tuuli nostaa
+// luokitusta vaikka aallot eivät olisi vielä ehtineet kasvaa sen mukaisiksi.
+// Raja-arvot vastaavat karkeasti Beaufort 6 (kova tuuli) ja 7-8 (myrskyn puuska).
+const WIND_HUONO_MS = 17;
+const WIND_VALTTAVA_MS = 12;
+
 /**
  * Almejónin oma nyrkkisääntö aallon mukavuudelle. EI virallinen standardi -
  * ks. selitys sivulla ("Miten arvio lasketaan?"). Palauttaa 'green'|'yellow'|'red'.
- *
- * Perusidea:
- *  - Aallonkorkeus suhteessa veneen vesilinjaan (7.3 m) antaa perustason.
- *  - Lyhyt jakso (< 3 s, jyrkkä paikallinen tuuliaallokko) pahentaa tilannetta.
- *  - Pitkä jakso (>= 5.5 s, loiva mainingki) voi lieventää lievää tapausta.
- *  - Kova tuuli pahentaa tilannetta riippumatta senhetkisestä aallonkorkeudesta,
- *    koska aallokko seuraa tuulta viiveellä.
  */
 function classify(heightM, periodS, windMs){
   if (heightM == null || isNaN(heightM)) return null;
-  let level = heightM <= 0.4 ? 0 : (heightM <= 0.9 ? 1 : 2); // 0=green 1=yellow 2=red
+  const ratio = heightM / BOAT_LWL_M;
+  let level = ratio <= HEIGHT_RATIO_HYVA_MAX ? 0 : (ratio <= HEIGHT_RATIO_VALTTAVA_MAX ? 1 : 2); // 0=hyvä 1=välttävä 2=huono
 
   if (periodS != null && !isNaN(periodS)){
-    if (periodS < 3.0) level = Math.min(2, level + 1);
-    else if (periodS >= 5.5) level = Math.max(0, level - (level < 2 ? 1 : 0));
+    if (periodS < PERIOD_JYRKKA_S) level = Math.min(2, level + 1);
+    else if (periodS >= PERIOD_LOIVA_S) level = Math.max(0, level - (level < 2 ? 1 : 0));
   }
   if (windMs != null && !isNaN(windMs)){
-    if (windMs >= 17) level = 2;
-    else if (windMs >= 12) level = Math.min(2, level + 1);
+    if (windMs >= WIND_HUONO_MS) level = 2;
+    else if (windMs >= WIND_VALTTAVA_MS) level = Math.min(2, level + 1);
   }
   return ["green","yellow","red"][level];
 }
 function levelLabel(level){
-  return {green:"Mukava", yellow:"Epämukava", red:"Vaarallinen", null:"–"}[level] ?? "–";
+  return {green:"Hyvä", yellow:"Välttävä", red:"Huono", null:"–"}[level] ?? "–";
 }
 
 function fmtHm(iso){
