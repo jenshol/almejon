@@ -49,4 +49,31 @@ Kaikki säädöt ovat `index.html`:n `<script>`-osiossa:
 
 - "Suomenlahti (avomeri)" -poijun tarkkaa WGS84-koordinaattia ei ole julkisesti dokumentoitu aaltopoiju.fi:llä — käytetty sijainti (59.973, 25.602, Kalbådagrundin lähellä) on paras arvio ja vaikuttaa vain siihen, miltä pisteeltä Open-Meteo-ennuste haetaan, ei poijuhavaintoon itseensä.
 - Itämerellä ei ole merkittävää vuorovesivaihtelua — merivedenkorkeus-osio linkittää Ilmatieteen laitoksen sivulle, koska paikallinen sääolosuhteiden (ilmanpaine, tuuli) aiheuttama vaihtelu voi silti olla merkittävää.
-- **GitHub Actionsin `schedule`-ajastus on epäluotettava**: `update-buoy.yml` on ajastettu 30 min välein, mutta havaittu käytännössä, että ajastettu ajo ei ole käynnistynyt kertaakaan itsestään usean tunnin aikana (vain manuaaliset "Run workflow" -ajot ovat toimineet). Tämä on GitHubin dokumentoitu, tunnettu rajoitus matalan aktiviteetin repoissa - ajastus on "best effort" eikä sillä ole SLA:ta. Jos poijudata näyttää usein liian vanhalta, käy käynnistämässä ajo manuaalisesti (Actions → "Päivitä aaltopoijudata" → "Run workflow"), tai harkitse ulkopuolista cron-palvelua (esim. cron-job.org), joka kutsuu GitHubin API:a `workflow_dispatch`-tapahtumalla luotettavammin.
+- **GitHub Actionsin `schedule`-ajastus on epäluotettava**: `update-buoy.yml` on ajastettu 30 min välein, mutta havaittu käytännössä, että ajastettu ajo ei ole käynnistynyt kertaakaan itsestään usean tunnin aikana (vain manuaaliset "Run workflow" -ajot ovat toimineet). Tämä on GitHubin dokumentoitu, tunnettu rajoitus matalan aktiviteetin repoissa - ajastus on "best effort" eikä sillä ole SLA:ta. Katso alta "Ajastuksen luotettava korjaus".
+- Selaimessa suoraan (ilman GitHub Actionsia) tehty poijuhaku ei toimi: aaltopoiju.fi ei salli CORS-pyyntöjä selaimesta, ja testatuista ilmaisista julkisista CORS-proxyista (allorigins.win, thingproxy, codetabs) yksikään ei vastannut luotettavasti, ja corsproxy.io vaatii nykyään oman API-avaimen. Siksi datan haku on pakko tehdä palvelinpuolella (GitHub Actions) eikä suoraan sivulta.
+
+## Ajastuksen luotettava korjaus (suositeltu, ~5 min, vaatii oman GitHub-tokenin)
+
+GitHub Actionsin oma `schedule`-ajastin ei siis käynnisty luotettavasti itsekseen matalan aktiviteetin repoissa. Luotettavin korjaus on ulkopuolinen, ilmainen ajastuspalvelu, joka kutsuu GitHubin API:a ja pakottaa `update-buoy.yml`-workflown käyntiin sovitulla välillä. Tätä ei voi tehdä automaattisesti puolestasi, koska se vaatii henkilökohtaisen GitHub-tokenin liittämisen kolmannen osapuolen palveluun — token pitää aina syöttää itse suoraan kyseisen palvelun omaan käyttöliittymään.
+
+1. **Luo GitHub-token**: [github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new) ("Fine-grained personal access token").
+   - Resource owner: `jenshol`
+   - Repository access: "Only select repositories" → `almejon`
+   - Permissions → Repository permissions → **Actions: Read and write**
+   - Expiration: esim. 1 vuosi
+   - "Generate token" → kopioi arvo talteen (näytetään vain kerran).
+2. **Luo ilmainen tili** osoitteessa [cron-job.org](https://cron-job.org) (ei vaadi luottokorttia).
+3. **Luo uusi cronjob** seuraavilla asetuksilla:
+   - Title: `Almejon buoy refresh`
+   - URL: `https://api.github.com/repos/jenshol/almejon/actions/workflows/update-buoy.yml/dispatches`
+   - Execution schedule: esim. joka 15. minuutti
+   - Request method: `POST`
+   - Headers (Advanced-välilehdeltä):
+     - `Accept: application/vnd.github+json`
+     - `Authorization: Bearer <LIITÄ_TOKEN_TÄHÄN>`
+     - `X-GitHub-Api-Version: 2022-11-28`
+     - `Content-Type: application/json`
+   - Request body: `{"ref":"main"}`
+4. Tallenna ja testaa heti "Run now" -painikkeella, tarkista sitten [Actions-välilehdeltä](https://github.com/jenshol/almejon/actions/workflows/update-buoy.yml), että uusi ajo käynnistyi ja onnistui.
+
+Jos "Fine-grained token" tuntuu monimutkaiselta, kelpaa myös perinteinen "classic" token (Settings → Developer settings → Personal access tokens → Tokens (classic)) `public_repo`-oikeudella, koska repositorio on julkinen.
