@@ -355,7 +355,10 @@ function renderLocationCard(locKey, buoyStation, marine, windData){
   let nowLevel = null, ageMin = null, stale = false;
   if (latest){
     ageMin = minutesAgo(latest.time);
-    stale = ageMin > 90; // yli 1.5h vanha havainto - merkitään epäluotettavaksi
+    // Aaltopoiju.fi:n HAVAINTO-lukema päivittyy vain n. kerran tunnissa (joskus viiveellä),
+    // joten 60-110 min "ikä" on normaalia eikä tarkoita että haku olisi rikki.
+    // Varoitetaan vasta kun havainto on selvästi useamman päivityssyklin takana.
+    stale = ageMin > 130;
     const windNow = windData?.hourly?.wind_speed_10m?.[0];
     nowLevel = classify(latest.height_m, latest.period_s, windNow);
   }
