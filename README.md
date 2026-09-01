@@ -10,7 +10,7 @@ Sivu näyttää:
 - Vallitsevan hetken sään (ikoni + lämpötila, yhdestä pisteestä, Porkkala) suoraan kummankin alueen nyt-tilanteen laatikossa, poijuhavainnon vieressä
 - Tuulen nopeuden ja suunnan samoissa laatikoissa aaltotietojen kanssa (nyt-tilanne + jokaisessa tuntiennustelaatikossa pieni tuuli-ikoni)
 - Seuraavat tunnit tuntikohtaisina "chippeinä"
-- Seuraavat 4 vuorokautta Yö/Aamu/Päivä/Ilta-lohkoina, joissa aallonkorkeuden ja suuntanuolen (lohkon korkeimman aallon suunnasta) lisäksi näkyy myös kyseisen ajanjakson sää (ikoni + keskilämpötila, lohkon PAHIN säätila) — ei enää erillistä sääkorttia (huomisen Aamu näkyy tarkoituksella myös tuntiennusteessa, koska veneellä voi olla yöpymässä vesillä valoisana kesäyönä)
+- Seuraavat 6 vuorokautta Yö/Aamu/Päivä/Ilta-lohkoina, joissa aallonkorkeuden ja suuntanuolen (lohkon korkeimman aallon suunnasta) lisäksi näkyy myös kyseisen ajanjakson sää (ikoni + keskilämpötila, lohkon PAHIN säätila) — ei enää erillistä sääkorttia (huomisen Aamu näkyy tarkoituksella myös tuntiennusteessa, koska veneellä voi olla yöpymässä vesillä valoisana kesäyönä). Kauimmaiset päivät (5.–6. vuorokausi) ovat säätieteellisesti epätarkempia kuin lähipäivät — näytetään silti, koska paras saatavilla oleva arvio on parempi kuin ei mitään.
 
 ## Käyttöönotto GitHubissa
 
