@@ -557,8 +557,9 @@ function renderDayBuckets(hourly, windHourly, weatherHourly){
     const wind = windHourly?.wind_speed_10m?.[i];
     const c = classify(h, p, wind);
     const w = weatherByTime.get(timeStrs[i]);
+    const dir = hourly.wave_direction?.[i];
     byDay[dayKey] ??= {Yö: [], Aamu: [], Päivä: [], Ilta: []};
-    if (c) byDay[dayKey][part].push({score: c.score, h, wcode: w?.code, wtemp: w?.temp});
+    if (c) byDay[dayKey][part].push({score: c.score, h, dir, wcode: w?.code, wtemp: w?.temp});
   });
 
   const dayKeys = Object.keys(byDay).slice(0, 4);
@@ -574,6 +575,15 @@ function renderDayBuckets(hourly, windHourly, weatherHourly){
   };
   const worstWeatherCode = (arr) => arr.reduce((best, e) =>
     weatherSeverityRank(e.wcode) > weatherSeverityRank(best) ? e.wcode : best, null);
+  // Suunta otetaan siitä tunnista jolla aalto on lohkon korkein (sama "pahin/merkittävin
+  // hetki ratkaisee" -periaate kuin muuallakin) - kertoo mistä se isoin aalto tulee.
+  const dirAtMaxHeight = (arr) => {
+    let best = null, bestH = -Infinity;
+    for (const e of arr){
+      if (e.h != null && !isNaN(e.h) && e.h > bestH){ bestH = e.h; best = e.dir; }
+    }
+    return best;
+  };
   const avgTemp = (arr) => {
     const temps = arr.map(x => x.wtemp).filter(t => t != null && !isNaN(t));
     return temps.length ? temps.reduce((a, b) => a + b, 0) / temps.length : null;
@@ -589,12 +599,13 @@ function renderDayBuckets(hourly, windHourly, weatherHourly){
       const sc = worstScore(entries);
       const lvl = levelFromScore(sc);
       const mh = maxHeight(entries);
+      const dir = dirAtMaxHeight(entries);
       const [wicon, wtext] = weatherCodeInfo(worstWeatherCode(entries));
       const wtemp = avgTemp(entries);
       // Ei enää Hyvä/Välttävä/Huono-sanaa - väri ja indeksiluku pallossa kertovat saman.
-      // Järjestys: pallo+indeksi, Yö/Aamu/jne, aallonkorkeus, sääikoni, ilmanlämpötila.
+      // Järjestys: pallo+indeksi, Yö/Aamu/jne, aallonkorkeus+suunta, sääikoni, ilmanlämpötila.
       return `<div class="daypart"><span>${scoreDot(lvl, sc, 18)}${p}</span>
-        <span>${mh != null ? mh.toFixed(1)+" m" : "–"} <span title="${wtext}">${wicon}</span> ${wtemp != null ? Math.round(wtemp)+"°" : ""}</span></div>`;
+        <span>${mh != null ? mh.toFixed(1)+" m" : "–"} ${dirArrow(dir)}${degToCompass(dir)} <span title="${wtext}">${wicon}</span> ${wtemp != null ? Math.round(wtemp)+"°" : ""}</span></div>`;
     }).filter(Boolean).join("");
     return `<div class="day"><h3>${label}</h3>${parts}</div>`;
   }).join("");
