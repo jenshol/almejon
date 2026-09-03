@@ -771,7 +771,7 @@ async function loadAll(){
 
   const [marineAvomeri, marineRannikko, windAvomeri, windRannikko, weatherData] = await Promise.all([
     loadMarineForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
-    loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
+    loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon, "dwd_ewam").catch(e => (console.error(e), null)), // TILAPÄINEN: vertailua varten takaisin dwd_ewamiin, ks. README
     loadWindForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
     loadWindForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
     loadWeatherForecast(WEATHER_LOCATION.lat, WEATHER_LOCATION.lon).catch(e => (console.error(e), null)),
