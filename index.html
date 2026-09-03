@@ -431,18 +431,35 @@ async function loadMarineForecast(lat, lon, model){
   // saman datan uudelleenpiirtoa.
   // "model" (valinnainen): Open-Meteon Marine-API tukee usean sääkeskuksen aaltomallia
   // ("models="-parametri) oletuksena käytetyn "best_match" (automaattivalinta) sijaan.
-  // Kokeilimme pakottaa rannikolle DWD:n EWAMin (dwd_ewam), koska se on dokumentaation
-  // mukaan hienojakoisin (n. 5 km) Euroopan/Itämeren alueella - mutta tälle pisteelle
-  // sillä on vain n. 3,4 vrk ennustehorisontti (loppu tulee null-arvoina), ja "best_match"
-  // osoittautui tässä pisteessä identtiseksi meteofrance_wave-mallin kanssa (0 eroa 168h
-  // yli) - siis jo valmiiksi hienojakoinen JA täyden 7 vrk mittainen. Siksi kumpikaan
-  // paikka ei enää pakota mallia, vaan molemmat käyttävät best_match-automaattivalintaa.
   const modelParam = model ? `&models=${model}` : "";
   const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}` +
     `&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,` +
     `wind_wave_height,wind_wave_period,sea_level_height_msl` +
     `${modelParam}&timezone=Europe%2FHelsinki&forecast_days=7&_=${Date.now()}`;
   return fetchJson(url);
+}
+
+// Yhdistää kaksi Open-Meteon merisää-vastausta tunti tunnilta: käyttää "precise"-mallin
+// (dwd_ewam, n. 5 km hila) arvoa aina kun se on saatavilla, ja täydentää loput tunnit
+// "fallback"-mallilla (best_match, jolla on täysi 7 vrk:n horisontti). Rannikolla dwd_ewam
+// on todettu käytännössä osuvammaksi lähitunneille (myös Aaltopoiju-havaintohistoriaan
+// verrattuna) mutta sen ennustehorisontti loppuu n. 3,4 vrk:n päähän (loput tulevat
+// null-arvoina) - siksi tarkempaa mallia ei voi käyttää yksinään koko 7 vrk:n ajalle.
+// Molemmilla vastauksilla on sama lat/lon/timezone/forecast_days, joten "time"-sarakkeen
+// oletetaan olevan identtinen; jos jompikumpi haku epäonnistuu, palautetaan pelkkä toinen.
+function mergeMarineForecasts(precise, fallback){
+  if (!precise?.hourly) return fallback;
+  if (!fallback?.hourly) return precise;
+  const ph = precise.hourly, fh = fallback.hourly;
+  const mergedHourly = { time: ph.time };
+  for (const key of Object.keys(ph)){
+    if (key === "time") continue;
+    const pArr = ph[key];
+    if (!Array.isArray(pArr)){ mergedHourly[key] = pArr; continue; }
+    const fArr = fh[key];
+    mergedHourly[key] = pArr.map((v, i) => (v !== null && v !== undefined) ? v : (fArr ? fArr[i] : null));
+  }
+  return { ...precise, hourly: mergedHourly };
 }
 async function loadWindForecast(lat, lon){
   // Samalla haulla myös vuorokausikohtainen sää (säätila + ylin/alin lämpötila) -
@@ -769,13 +786,17 @@ async function loadAll(){
 
   const buoyData = await loadBuoyData();
 
-  const [marineAvomeri, marineRannikko, windAvomeri, windRannikko, weatherData] = await Promise.all([
+  const [marineAvomeri, marineRannikkoPrecise, marineRannikkoFallback, windAvomeri, windRannikko, weatherData] = await Promise.all([
     loadMarineForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
-    loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon, "dwd_ewam").catch(e => (console.error(e), null)), // TILAPÄINEN: vertailua varten takaisin dwd_ewamiin, ks. README
+    loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon, "dwd_ewam").catch(e => (console.error(e), null)),
+    loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
     loadWindForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
     loadWindForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
     loadWeatherForecast(WEATHER_LOCATION.lat, WEATHER_LOCATION.lon).catch(e => (console.error(e), null)),
   ]);
+  // dwd_ewam lähitunneille (osuvampi, ks. mergeMarineForecasts) + best_match täydentämään
+  // loput 7 vrk:sta siltä osin kuin dwd_ewamilla ei ole enää dataa.
+  const marineRannikko = mergeMarineForecasts(marineRannikkoPrecise, marineRannikkoFallback);
 
   cardsEl.innerHTML =
     renderLocationCard("rannikko", buoyData?.stations?.rannikko, marineRannikko, windRannikko, weatherData) +
