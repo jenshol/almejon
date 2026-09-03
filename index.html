@@ -557,7 +557,7 @@ function renderDayBuckets(hourly, windHourly, weatherHourly){
     const w = weatherByTime.get(timeStrs[i]);
     const dir = hourly.wave_direction?.[i];
     byDay[dayKey] ??= {Yö: [], Aamu: [], Päivä: [], Ilta: []};
-    if (c) byDay[dayKey][part].push({score: c.score, h, dir, wcode: w?.code, wtemp: w?.temp});
+    if (c) byDay[dayKey][part].push({score: c.score, h, p, wind, dir, wcode: w?.code, wtemp: w?.temp});
   });
 
   // 6 vuorokautta (kaikki mitä forecast_days=7 antaa tämän päivän jälkeen) - kauimmaiset
@@ -577,12 +577,14 @@ function renderDayBuckets(hourly, windHourly, weatherHourly){
   };
   const worstWeatherCode = (arr) => arr.reduce((best, e) =>
     weatherSeverityRank(e.wcode) > weatherSeverityRank(best) ? e.wcode : best, null);
-  // Suunta otetaan siitä tunnista jolla aalto on lohkon korkein (sama "pahin/merkittävin
-  // hetki ratkaisee" -periaate kuin muuallakin) - kertoo mistä se isoin aalto tulee.
-  const dirAtMaxHeight = (arr) => {
+  // Suunta (ja debuggausta varten jakso + tuuli) otetaan siitä tunnista jolla aalto on
+  // lohkon korkein (sama "pahin/merkittävin hetki ratkaisee" -periaate kuin muuallakin) -
+  // näin jakso/tuuli-luvut vastaavat samaa hetkeä kuin näytetty aallonkorkeus ja -suunta,
+  // eikä sekalaisia lukuja eri tunneilta.
+  const entryAtMaxHeight = (arr) => {
     let best = null, bestH = -Infinity;
     for (const e of arr){
-      if (e.h != null && !isNaN(e.h) && e.h > bestH){ bestH = e.h; best = e.dir; }
+      if (e.h != null && !isNaN(e.h) && e.h > bestH){ bestH = e.h; best = e; }
     }
     return best;
   };
@@ -601,13 +603,18 @@ function renderDayBuckets(hourly, windHourly, weatherHourly){
       const sc = worstScore(entries);
       const lvl = levelFromScore(sc);
       const mh = maxHeight(entries);
-      const dir = dirAtMaxHeight(entries);
+      const maxE = entryAtMaxHeight(entries);
+      const dir = maxE?.dir;
+      const period = maxE?.p;
+      const wind = maxE?.wind;
       const [wicon, wtext] = weatherCodeInfo(worstWeatherCode(entries));
       const wtemp = avgTemp(entries);
       // Ei enää Hyvä/Välttävä/Huono-sanaa - väri ja indeksiluku pallossa kertovat saman.
-      // Järjestys: pallo+indeksi, Yö/Aamu/jne, aallonkorkeus+suunta, sääikoni, ilmanlämpötila.
+      // Jakso ja tuuli näytetään debuggausta varten - näin näkee suoraan mitkä raaka-arvot
+      // (korkeus, jakso, tuuli) tuottivat pallon värin/indeksiluvun, ilman konsolia.
+      // Järjestys: pallo+indeksi, Yö/Aamu/jne, aallonkorkeus/jakso, tuuli, suunta, sääikoni, lämpötila.
       return `<div class="daypart"><span>${scoreDot(lvl, sc, 18)}${p}</span>
-        <span>${mh != null ? mh.toFixed(1)+" m" : "–"} ${dirArrow(dir)}${degToCompass(dir)} <span title="${wtext}">${wicon}</span> ${wtemp != null ? Math.round(wtemp)+"°" : ""}</span></div>`;
+        <span>${mh != null ? mh.toFixed(1)+" m" : "–"}${period != null && !isNaN(period) ? "/"+period.toFixed(1)+"s" : ""} ${wind != null && !isNaN(wind) ? Math.round(wind)+"m/s" : ""} ${dirArrow(dir)}${degToCompass(dir)} <span title="${wtext}">${wicon}</span> ${wtemp != null ? Math.round(wtemp)+"°" : ""}</span></div>`;
     }).filter(Boolean).join("");
     return `<div class="day"><h3>${label}</h3>${parts}</div>`;
   }).join("");
