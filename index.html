@@ -231,9 +231,19 @@ const LOCATIONS = {
   },
   rannikko: {
     key: "rannikko",
-    title: "Rannikko — Suomenlinna",
-    coordsLabel: "60.123°N 24.973°E",
-    lat: 60.1233, lon: 24.9725,
+    title: "Rannikko — Upinniemi–Inkoo",
+    coordsLabel: "n. 59,98°N 24,11°E (Upinniemen ja Bejarholmenin puolivälissä)",
+    // Ennusteen hakupiste EI ole sama kuin poijuhavainnon paikka (ks. buoyNote alla) -
+    // tämä on tarkoituksella siirretty pois Suomenlinnasta (n. 65 km itään todellisilta
+    // reiteiltä) lähemmäs sitä aluetta jolla syyskaudella tyypillisesti liikutaan:
+    // Upinniemen (60,0292°N 24,3583°E) ja Inkoon Bejarholmenin (59,93°N 23,87°E)
+    // puoliväli. Suomenlinnan poiju oli aiemmin sekä havainnon että ennusteen paikka,
+    // mikä teki ennusteesta harhaanjohtavan avomerta kohti auenneempaan suuntaan.
+    lat: 59.980, lon: 24.114,
+    // Aaltopoiju.fi:llä ei ole yhtään poijua lähempänä (tarkistettu koko asemalista) -
+    // Suomenlinna on edelleen lähin oikea HAVAINTO tällä rannikolla, siksi se säilyy
+    // poijulähteenä vaikka ennuste haetaan nyt eri, edustavammasta pisteestä.
+    buoyNote: "Suomenlinnasta",
   },
 };
 
@@ -415,14 +425,20 @@ async function loadBuoyData(){
   }
 }
 
-async function loadMarineForecast(lat, lon){
+async function loadMarineForecast(lat, lon, model){
   // "&_=..." pakottaa selaimen hakemaan tuoreen vastauksen HTTP-välimuistin sijaan -
   // tämä on juuri se, mikä tekee "Päivitä nyt" -napista aidon tarkistuksen eikä pelkkää
   // saman datan uudelleenpiirtoa.
+  // "model" (valinnainen): Open-Meteon Marine-API tukee usean sääkeskuksen aaltomallia
+  // ("models="-parametri) oletuksena käytetyn "best_match" (automaattivalinta) sijaan.
+  // Käytämme DWD:n EWAMia (dwd_ewam) rannikolla, koska se on tarkin Euroopan/Itämeren
+  // alueella tarjolla oleva malli (n. 5 km hila, ks. README) - avomerelle ei ole erikseen
+  // pakotettu mallia, koska best_match on siellä jo osoittautunut toimivaksi.
+  const modelParam = model ? `&models=${model}` : "";
   const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}` +
     `&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,` +
     `wind_wave_height,wind_wave_period,sea_level_height_msl` +
-    `&timezone=Europe%2FHelsinki&forecast_days=7&_=${Date.now()}`;
+    `${modelParam}&timezone=Europe%2FHelsinki&forecast_days=7&_=${Date.now()}`;
   return fetchJson(url);
 }
 async function loadWindForecast(lat, lon){
@@ -679,7 +695,7 @@ function renderLocationCard(locKey, buoyStation, marine, windData, weatherData){
     ? `<div class="status-badge ${nowLevel}">
          <div class="sb-left">
            <div class="big">${scoreDot(nowLevel, nowScore, 24)}${levelLabel(nowLevel)}</div>
-           <div class="small">${stale ? `<span class="stale">Havainto ${ageMin} min vanha - tarkista!</span>` : `Poijuhavainto ${ageMin} min sitten`}</div>
+           <div class="small">${stale ? `<span class="stale">Havainto ${ageMin} min vanha - tarkista!</span>` : `Poijuhavainto${loc.buoyNote ? " (" + loc.buoyNote + ")" : ""} ${ageMin} min sitten`}</div>
          </div>
          ${weatherBlock}
        </div>`
@@ -752,7 +768,7 @@ async function loadAll(){
 
   const [marineAvomeri, marineRannikko, windAvomeri, windRannikko, weatherData] = await Promise.all([
     loadMarineForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
-    loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
+    loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon, "dwd_ewam").catch(e => (console.error(e), null)),
     loadWindForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
     loadWindForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
     loadWeatherForecast(WEATHER_LOCATION.lat, WEATHER_LOCATION.lon).catch(e => (console.error(e), null)),
