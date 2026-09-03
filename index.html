@@ -431,9 +431,12 @@ async function loadMarineForecast(lat, lon, model){
   // saman datan uudelleenpiirtoa.
   // "model" (valinnainen): Open-Meteon Marine-API tukee usean sääkeskuksen aaltomallia
   // ("models="-parametri) oletuksena käytetyn "best_match" (automaattivalinta) sijaan.
-  // Käytämme DWD:n EWAMia (dwd_ewam) rannikolla, koska se on tarkin Euroopan/Itämeren
-  // alueella tarjolla oleva malli (n. 5 km hila, ks. README) - avomerelle ei ole erikseen
-  // pakotettu mallia, koska best_match on siellä jo osoittautunut toimivaksi.
+  // Kokeilimme pakottaa rannikolle DWD:n EWAMin (dwd_ewam), koska se on dokumentaation
+  // mukaan hienojakoisin (n. 5 km) Euroopan/Itämeren alueella - mutta tälle pisteelle
+  // sillä on vain n. 3,4 vrk ennustehorisontti (loppu tulee null-arvoina), ja "best_match"
+  // osoittautui tässä pisteessä identtiseksi meteofrance_wave-mallin kanssa (0 eroa 168h
+  // yli) - siis jo valmiiksi hienojakoinen JA täyden 7 vrk mittainen. Siksi kumpikaan
+  // paikka ei enää pakota mallia, vaan molemmat käyttävät best_match-automaattivalintaa.
   const modelParam = model ? `&models=${model}` : "";
   const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}` +
     `&hourly=wave_height,wave_period,wave_direction,swell_wave_height,swell_wave_period,` +
@@ -768,7 +771,7 @@ async function loadAll(){
 
   const [marineAvomeri, marineRannikko, windAvomeri, windRannikko, weatherData] = await Promise.all([
     loadMarineForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
-    loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon, "dwd_ewam").catch(e => (console.error(e), null)),
+    loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
     loadWindForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
     loadWindForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
     loadWeatherForecast(WEATHER_LOCATION.lat, WEATHER_LOCATION.lon).catch(e => (console.error(e), null)),
