@@ -125,7 +125,7 @@
   <span><span class="dot green"></span>Hyvä</span>
   <span><span class="dot yellow"></span>Välttävä</span>
   <span><span class="dot red"></span>Huono</span>
-  <span>Mukavuusindeksi: alle 1,0 hyvä, 1,0–2,0 välttävä, yli 2,0 huono</span>
+  <span>Mukavuusindeksi: alle 1,6 hyvä, 1,6–2,0 välttävä, yli 2,0 huono</span>
 </div>
 
 <div id="cards"></div>
@@ -151,8 +151,12 @@
   </p>
   <p>
     Indeksi on kolmen <strong>jatkuvan</strong> osatekijän suurin (huonoin) arvo — ei
-    portaittaisia +1/-1-pykälänostoja. Jokainen osatekijä on 0:sta ylöspäin niin, että
-    <strong>alle 1,0 = Hyvä, 1,0–2,0 = Välttävä, yli 2,0 = Huono</strong>:
+    portaittaisia +1/-1-pykälänostoja. Jokainen osatekijä on skaalattu 0:sta ylöspäin niin,
+    että arvo 1,0 vastaa osatekijän omaa "puoliväli"-kynnystä (esim. puolet aallon
+    murtumisrajasta) ja 2,0 osatekijän pahinta tasoa täydessä mitassaan. Lopullinen
+    <strong>Hyvä/Välttävä/Huono</strong>-luokitus on kuitenkin nostettu käytännön
+    merikokemuksen perusteella: <strong>alle 1,6 = Hyvä, 1,6–2,0 = Välttävä, yli
+    2,0 = Huono</strong> — indeksi 1,6 on koettu saaristossa todella hyväksi ajokeliksi.
   </p>
   <p>
     <strong>1) Aallon jyrkkyys suhteessa murtumisrajaan (korvaa vanhat jakson kynnysarvot).</strong>
@@ -290,13 +294,15 @@ const WIND_HUONO_MS = 17;
 
 /**
  * Muuntaa jatkuvan indeksin (0...2+) väriluokaksi:
- *   < 1.0 = Hyvä, 1.0-2.0 = Välttävä, > 2.0 = Huono.
- * Raja-arvo 1.0 tarkoittaa aina "juuri kynnyksellä", 2.0 "pahin osatekijä täydessä
- * mitassaan" (esim. aalto murtumassa, tai tuuli 17 m/s) - ei mielivaltaista pykälää.
+ *   < 1.6 = Hyvä, 1.6-2.0 = Välttävä, > 2.0 = Huono.
+ * Vihreä/keltainen-raja nostettu mallin alkuperäisestä 1.0:sta 1.6:een käytännön
+ * merikokemuksen perusteella (indeksi 1,6 koettu todellisuudessa saaristossa
+ * "todella hyväksi ajokeliksi") - 2.0 pysyy "pahin osatekijä täydessä mitassaan"
+ * -rajana (esim. aalto murtumassa, tai tuuli 17 m/s).
  */
 function levelFromScore(score){
   if (score == null || isNaN(score)) return null;
-  return score < 1 ? "green" : (score < 2 ? "yellow" : "red");
+  return score < 1.6 ? "green" : (score < 2 ? "yellow" : "red");
 }
 
 /**
@@ -352,13 +358,14 @@ function relLuminance({r, g, b}){
 }
 
 // Vihreä->keltainen väriliuku vain kapealla indeksivälillä GRADIENT_START..GRADIENT_END:
-// sen alapuolella (esim. 0,3, 0,9, 1,1) pallo on täysin sama kirkas vihreä kuin ennenkin,
-// sen yläpuolella (esim. 1,6, 1,9) täysin sama keltainen kuin ennenkin - vain tällä
+// sen alapuolella (esim. 1,0, 1,5, 1,7) pallo on täysin sama kirkas vihreä kuin ennenkin,
+// sen yläpuolella (esim. 1,9, 2,0) täysin sama keltainen kuin ennenkin - vain tällä
 // kapealla "onko tämä vielä ihan hyvä vai jo selvästi välttävä" -rajavyöhykkeellä väri
 // liukuu portaattomasti, jotta juuri se raja ei tunnu mielivaltaisen terävältä hypyltä.
+// Ikkuna siirretty 1,6:n uuden vihreä/keltainen-rajan mukaan (ks. levelFromScore).
 // Keltainen->punainen -raja (2.0) on edelleen tarkoituksella täysin terävä, ei liukua.
-const GRADIENT_START = 1.1;
-const GRADIENT_END = 1.5;
+const GRADIENT_START = 1.7;
+const GRADIENT_END = 1.9;
 function greenYellowBlend(score){
   const t = Math.max(0, Math.min(1, (score - GRADIENT_START) / (GRADIENT_END - GRADIENT_START)));
   const green = hexToRgb(cssVarHex("--green-strong"));
