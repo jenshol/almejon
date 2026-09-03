@@ -79,10 +79,18 @@
   .windnow .arrow{font-size:1rem}
 
   .days{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+  /* Kapealla (puhelin-)näytöllä 2 saraketta puristaa "0.5 m/4.5s 7m/s ↗LO ⛅ 15°" -tekstin
+     niin ahtaaseen tilaan että se meni päällekkäin/leikkautui - siksi yksi sarake alle 480px. */
+  @media (max-width:480px){
+    .days{grid-template-columns:1fr}
+  }
   .day{border:1px solid var(--border);border-radius:10px;padding:8px}
   .day h3{margin:0 0 6px;font-size:.78rem;color:var(--muted);font-weight:600}
-  .daypart{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:.76rem;gap:6px}
-  .daypart>span:last-child{white-space:nowrap;text-align:right}
+  .daypart{display:flex;justify-content:space-between;align-items:flex-start;padding:3px 0;font-size:.76rem;gap:6px;flex-wrap:wrap}
+  .daypart>span:first-child{flex:0 0 auto;white-space:nowrap}
+  /* Ei enää pakko-nowrap: jos rivi ei silti mahdu (esim. 2-numeroinen jakso+tuuli), se
+     rivittyy omalle rivilleen sen sijaan että leikkautuisi tai menisi vasemman sarakkeen päälle. */
+  .daypart>span:last-child{flex:1 1 auto;min-width:0;text-align:right}
   .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:-1px}
   .dot.green{background:var(--green-strong)}
   .dot.yellow{background:var(--yellow-strong)}
@@ -786,7 +794,8 @@ async function loadAll(){
 
   const buoyData = await loadBuoyData();
 
-  const [marineAvomeri, marineRannikkoPrecise, marineRannikkoFallback, windAvomeri, windRannikko, weatherData] = await Promise.all([
+  const [marineAvomeriPrecise, marineAvomeriFallback, marineRannikkoPrecise, marineRannikkoFallback, windAvomeri, windRannikko, weatherData] = await Promise.all([
+    loadMarineForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon, "dwd_ewam").catch(e => (console.error(e), null)),
     loadMarineForecast(LOCATIONS.avomeri.lat, LOCATIONS.avomeri.lon).catch(e => (console.error(e), null)),
     loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon, "dwd_ewam").catch(e => (console.error(e), null)),
     loadMarineForecast(LOCATIONS.rannikko.lat, LOCATIONS.rannikko.lon).catch(e => (console.error(e), null)),
@@ -795,7 +804,10 @@ async function loadAll(){
     loadWeatherForecast(WEATHER_LOCATION.lat, WEATHER_LOCATION.lon).catch(e => (console.error(e), null)),
   ]);
   // dwd_ewam lähitunneille (osuvampi, ks. mergeMarineForecasts) + best_match täydentämään
-  // loput 7 vrk:sta siltä osin kuin dwd_ewamilla ei ole enää dataa.
+  // loput 7 vrk:sta siltä osin kuin dwd_ewamilla ei ole enää dataa. Sama periaate nyt
+  // molemmilla sijainneilla - Avomerellä ero on saman suuruusluokan mutta päinvastaiseen
+  // suuntaan kuin Rannikolla (dwd_ewam antaa siellä keskimäärin korkeampia arvoja).
+  const marineAvomeri = mergeMarineForecasts(marineAvomeriPrecise, marineAvomeriFallback);
   const marineRannikko = mergeMarineForecasts(marineRannikkoPrecise, marineRannikkoFallback);
 
   cardsEl.innerHTML =
