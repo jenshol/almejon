@@ -168,15 +168,26 @@
     juuri jakson jyrkkyys, ei korkeus, ratkaisee erot.
   </p>
   <p>
-    <strong>2) Korkeus suhteessa vesilinjaan, painotettu Ted Brewerin Comfort Ratiolla.</strong>
-    Comfort Ratio (CR) on veneenrakennuksen vakiintunut tunnusluku, joka yhdistää painon,
-    pituuden ja leveyden: CR = paino(lbs) ÷ [0,65 × (0,7×LWL+0,3×LOA)(ft) × leveys(ft)^1,333].
-    Almejónille CR ≈ 17,4. CR on kehitetty purjeveneille eikä sellaisenaan kerro
-    "epämukava" leveän puoliliukuvan rungon takia (leveys rankaisee kaavassa voimakkaasti) —
-    siksi sitä käytetään täällä vain <em>kertoimena</em>: CR ÷ 25 (25 = Brewerin oman
-    "rannikkoristeilijä"-vyöhykkeen 20–30 keskikohta) ≈ 0,70. Tällä kertoimella skaalataan
-    yleisohjeen 6 %:n korkeus/LWL-raja n. 4,2 %:iin Almejónille (≈ 0,30 m; Välttävä-raja
-    kaksinkertaisena ≈ 0,61 m). Indeksi = (korkeus/LWL) ÷ 0,042.
+    <strong>2) Korkeus suhteessa vesilinjaan ja jaksoon, painotettu Ted Brewerin Comfort
+    Ratiolla.</strong> Comfort Ratio (CR) on veneenrakennuksen vakiintunut tunnusluku, joka
+    yhdistää painon, pituuden ja leveyden: CR = paino(lbs) ÷ [0,65 × (0,7×LWL+0,3×LOA)(ft) ×
+    leveys(ft)^1,333]. Almejónille CR ≈ 17,4. CR on kehitetty purjeveneille eikä sellaisenaan
+    kerro "epämukava" leveän puoliliukuvan rungon takia (leveys rankaisee kaavassa
+    voimakkaasti) — siksi sitä käytetään täällä vain <em>kertoimena</em>: CR ÷ 25 (25 =
+    Brewerin oman "rannikkoristeilijä"-vyöhykkeen 20–30 keskikohta) ≈ 0,70. Tällä kertoimella
+    skaalataan yleisohjeen 6 %:n korkeus/LWL-raja n. 4,2 %:iin Almejónille (≈ 0,30 m;
+    Välttävä-raja kaksinkertaisena ≈ 0,61 m).
+    Pelkkä korkeus ei kuitenkaan yksin ratkaise mukavuutta — veneen pystysuuntainen
+    kiihtyvyys aallokossa riippuu myös jaksosta suunnilleen suhteessa 1/jakso² (pitkä loiva
+    mainingki tuntuu rauhalliselta, lyhyt jyrkkä kopu ikävältä vaikka korkeus olisi sama).
+    Siksi korkeus skaalataan ensin <em>efektiiviseksi korkeudeksi</em>:
+    korkeus × (3,6 s ÷ jakso)² — 3,6 s (<code>REFERENCE_PERIOD_S</code>) on jakso, jolla raja
+    pätee sellaisenaan, valittu koska juuri sillä jaksolla 0,5 m koettiin todellisuudessa
+    saaristossa Välttäväksi. Indeksi = (efektiivinen korkeus/LWL) ÷ 0,042. Esimerkki: 0,5 m
+    / 3,6 s → efektiivinen korkeus pysyy 0,5 m:ssä → indeksi 1,64 (Välttävä, ennallaan).
+    Sama 0,5 m mutta 10 s mainingilla → efektiivinen korkeus 0,5×(3,6/10)² ≈ 0,065 m →
+    indeksi 0,21 (Hyvä). Sama 0,5 m mutta 2 s kopulla → efektiivinen korkeus 0,5×(3,6/2)² ≈
+    1,62 m → indeksi 5,3 (Huono).
   </p>
   <p>
     <strong>3) Tuuli.</strong> Aallokko kasvaa tuulen perässä viiveellä, joten kova tuuli
@@ -286,6 +297,20 @@ const HEIGHT_RATIO_HYVA_BASE = 0.06;
 const HEIGHT_RATIO_HYVA_MAX = HEIGHT_RATIO_HYVA_BASE * CR_FACTOR;   // Almejónille n. 4,2 %
 const HEIGHT_RATIO_VALTTAVA_MAX = HEIGHT_RATIO_HYVA_MAX * 2;         // aina 2x yllä oleva
 
+// --- Korkeusosatekijän jaksoriippuvuus (pystykiihtyvyys) ---
+// Yllä oleva korkeus/LWL-raja on sellaisenaan jaksosta riippumaton - mutta todellisuudessa
+// veneen pystysuuntainen kiihtyvyys aallokossa on suunnilleen a ~ H / T^2 (H=korkeus,
+// T=jakso): sama korkeus tuntuu rauhalliselta pitkällä jaksolla (loiva mainingki, vene
+// "liukuu" aallon yli) mutta ikävältä lyhyellä jaksolla (jyrkkä kopu, nykivä liike) -
+// käytännössä havaittu: 0,5 m / 3,6 s saaristossa jo "aika ikävä" (Välttävä), mutta
+// samankokoinen 0,5 m / 10 s -mainingki avomerellä kuvitellaan "oikein mukavaksi" (Hyvä).
+// REFERENCE_PERIOD_S on jakso, jolla yllä oleva HEIGHT_RATIO_HYVA_MAX-raja pätee
+// SELLAISENAAN (ei skaalausta) - valittu = juuri se jakso jolla 0,5 m koettiin todellisuu-
+// dessa Välttäväksi, joten tunnettu havaintopiste pysyy muuttumattomana. Muilla jaksoilla
+// korkeus skaalataan efektiiviseksi korkeudeksi (REF/T)^2:lla ennen suhdelaskua: pidempi
+// jakso pienentää efektiivistä korkeutta (parempi), lyhyempi kasvattaa sitä (huonompi).
+const REFERENCE_PERIOD_S = 3.6;
+
 // Tuuli: aallokko kasvaa tuulen perässä viiveellä, joten kova tuuli ennakoi pahenevaa
 // keliä ennen kuin aallot ehtivät kasvaa sen mukaisiksi. 12 m/s = raja jolloin efekti
 // alkaa, 17 m/s (~Beaufort 7) = raja jolloin efekti on täysi.
@@ -307,15 +332,23 @@ function levelFromScore(score){
 
 /**
  * Jatkuva mukavuusindeksi. EI portaittaisia +1/-1-pykälänostoja - jokainen osatekijä
- * (korkeus suhteessa veneeseen, jyrkkyys suhteessa murtumaan, tuuli) lasketaan omalla
- * kaavallaan suoraan ilman turvamarginaaleja, ja lopputulos on osatekijöistä HUONOIN
- * (max) - pahin yksittäinen efekti ratkaisee, ei keskiarvo.
+ * (korkeus suhteessa veneeseen JA jaksoon, jyrkkyys suhteessa murtumaan, tuuli) lasketaan
+ * omalla kaavallaan suoraan ilman turvamarginaaleja, ja lopputulos on osatekijöistä
+ * HUONOIN (max) - pahin yksittäinen efekti ratkaisee, ei keskiarvo. Korkeusosatekijä ottaa
+ * jakson huomioon (ks. REFERENCE_PERIOD_S) - sama korkeus pitkällä jaksolla (mainingki) on
+ * parempi kuin lyhyellä jaksolla (kopu).
  * Palauttaa {level, score, scoreHeight, scoreSteepness, scoreWind} tai null.
  */
 function classify(heightM, periodS, windMs){
   if (heightM == null || isNaN(heightM)) return null;
 
-  const heightRatio = heightM / BOAT_LWL_M;
+  // Korkeus skaalataan jakson mukaan (ks. REFERENCE_PERIOD_S yllä) ennen LWL-suhteen
+  // laskemista - jos jaksoa ei tunneta, käytetään korkeutta sellaisenaan (ei skaalausta).
+  let heightEffective = heightM;
+  if (periodS != null && !isNaN(periodS) && periodS > 0){
+    heightEffective = heightM * Math.pow(REFERENCE_PERIOD_S / periodS, 2);
+  }
+  const heightRatio = heightEffective / BOAT_LWL_M;
   const scoreHeight = heightRatio / HEIGHT_RATIO_HYVA_MAX;
 
   let scoreSteepness = 0;
@@ -338,58 +371,16 @@ function classify(heightM, periodS, windMs){
 function levelLabel(level){
   return {green:"Hyvä", yellow:"Välttävä", red:"Huono", null:"–"}[level] ?? "–";
 }
-// Purkaa CSS-muuttujan (esim. "--green-strong") raakana hex-arvona - getComputedStyle
-// ottaa automaattisesti huomioon, kumpi teema (vaalea/tumma) on juuri nyt voimassa.
-function cssVarHex(varName){
-  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
-}
-function hexToRgb(hex){
-  hex = hex.replace("#", "");
-  if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
-  const num = parseInt(hex, 16);
-  return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
-}
-function lerp(a, b, t){ return Math.round(a + (b - a) * t); }
-// WCAG-tyylinen suhteellinen luminanssi (0=musta, 1=valkoinen) - käytetään tekstivärin
-// valintaan taustan vaaleuden mukaan, ei taustavärin sekoittamiseen.
-function relLuminance({r, g, b}){
-  const lin = c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
-  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-}
 
-// Vihreä->keltainen väriliuku vain kapealla indeksivälillä GRADIENT_START..GRADIENT_END:
-// sen alapuolella (esim. 1,0, 1,5, 1,7) pallo on täysin sama kirkas vihreä kuin ennenkin,
-// sen yläpuolella (esim. 1,9, 2,0) täysin sama keltainen kuin ennenkin - vain tällä
-// kapealla "onko tämä vielä ihan hyvä vai jo selvästi välttävä" -rajavyöhykkeellä väri
-// liukuu portaattomasti, jotta juuri se raja ei tunnu mielivaltaisen terävältä hypyltä.
-// Ikkuna siirretty 1,6:n uuden vihreä/keltainen-rajan mukaan (ks. levelFromScore).
-// Keltainen->punainen -raja (2.0) on edelleen tarkoituksella täysin terävä, ei liukua.
-const GRADIENT_START = 1.7;
-const GRADIENT_END = 1.9;
-function greenYellowBlend(score){
-  const t = Math.max(0, Math.min(1, (score - GRADIENT_START) / (GRADIENT_END - GRADIENT_START)));
-  const green = hexToRgb(cssVarHex("--green-strong"));
-  const yellow = hexToRgb(cssVarHex("--yellow-strong"));
-  const bg = { r: lerp(green.r, yellow.r, t), g: lerp(green.g, yellow.g, t), b: lerp(green.b, yellow.b, t) };
-  // Tekstiväri EI sekoitu lineaarisesti (se tuottaisi lähes lukukelvottoman kontrastin
-  // liu'un keskivaiheilla) - sen sijaan valitaan valkoinen tai tumma sen mukaan, kumpi
-  // luo paremman kontrastin juuri tähän taustaan. Vaihtuu terävästi puolivälin paikkeilla,
-  // täsmälleen samoihin väreihin kuin vihreän/keltaisen omat tekstivärit molemmissa päissä.
-  const useDark = relLuminance(bg) > 0.35;
-  const fg = useDark ? "rgb(58,44,0)" : "rgb(255,255,255)";
-  return { bg: `rgb(${bg.r},${bg.g},${bg.b})`, fg };
-}
-
+// Pallon väri on aina täysin terävä kolmiluokkainen (vihreä/keltainen/punainen) CSS-luokan
+// mukaan, ei liukuvärjätty. Kokeiltiin aiemmin vihreä->keltainen-väriliukua kapealla
+// indeksivälillä, mutta käytännössä sekoitusväri näytti epäselvemmältä/pahemmalta kuin
+// pelkkä tasainen keltainen - liuku poistettiin siksi käytöstä.
 function scoreDot(level, score, size){
   size = size || 18;
   if (level == null) return "";
   const txt = (score != null && !isNaN(score)) ? score.toFixed(1) : "–";
-  let colorStyle = "";
-  if ((level === "green" || level === "yellow") && score != null && !isNaN(score)){
-    const { bg, fg } = greenYellowBlend(score);
-    colorStyle = `background:${bg};color:${fg};`;
-  }
-  return `<span class="lvldot ${level}" style="width:${size}px;height:${size}px;font-size:${Math.max(8, Math.round(size * 0.42))}px;${colorStyle}" title="${levelLabel(level)}, indeksi ${txt}">${txt}</span>`;
+  return `<span class="lvldot ${level}" style="width:${size}px;height:${size}px;font-size:${Math.max(8, Math.round(size * 0.42))}px;" title="${levelLabel(level)}, indeksi ${txt}">${txt}</span>`;
 }
 
 function fmtHm(iso){
