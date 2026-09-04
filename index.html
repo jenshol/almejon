@@ -329,6 +329,20 @@ const HEIGHT_RATIO_VALTTAVA_MAX = HEIGHT_RATIO_HYVA_MAX * 2;         // aina 2x 
 // jakso pienentää efektiivistä korkeutta (parempi), lyhyempi kasvattaa sitä (huonompi).
 const REFERENCE_PERIOD_S = 3.6;
 
+// --- Ei koskaan punaista pelkän lyhyen jakson takia, jos aalto on itsessään pieni ---
+// REFERENCE_PERIOD_S-skaalaus on kalibroitu yhteen havaintopisteeseen (0,5 m / 3,6 s) ja
+// ekstrapoloi neliöllisesti - hyvin lyhyillä jaksoilla (~2 s) tämä nostaa jo 20-24 cm:n
+// aallon scoreHeight:n reilusti yli Huono-rajan, vaikka jyrkkyys (todellinen fysikaalinen
+// murtumisriski, ks. MICHE_STEEPNESS_LIMIT) pysyy samalla aallolla syvällä vihreällä
+// (n. 0,4-0,5). Käytännön havainto: 20 cm ei tunnu Almejónissa pahalta millään jaksolla.
+// Siksi scoreHeight (vain se - EI jyrkkyys- eikä tuuliosatekijä) rajataan Huono-rajan
+// alle kun raaka (skaalaamaton) korkeus on alle tämän. Jyrkkyys saa silti näyttää punaista
+// jos aalto todella on murtumassa (fysikaalisesti aito riski pienelläkin korkeudella), ja
+// tuuli saa näyttää punaista ennakoivana varoituksena vaikka aallot eivät olisi vielä
+// ehtineet kasvaa - kumpikaan ei kärsi samasta jakso-artefaktista kuin scoreHeight.
+const NO_RED_BELOW_HEIGHT_M = 0.30;
+const HEIGHT_SCORE_CAP_WHEN_SMALL = 1.9; // turvamarginaalilla Huono-rajan (2.0) alle
+
 // Tuuli: aallokko kasvaa tuulen perässä viiveellä, joten kova tuuli ennakoi pahenevaa
 // keliä ennen kuin aallot ehtivät kasvaa sen mukaisiksi. 12 m/s = raja jolloin efekti
 // alkaa, 17 m/s (~Beaufort 7) = raja jolloin efekti on täysi.
@@ -367,7 +381,12 @@ function classify(heightM, periodS, windMs){
     heightEffective = heightM * Math.pow(REFERENCE_PERIOD_S / periodS, 2);
   }
   const heightRatio = heightEffective / BOAT_LWL_M;
-  const scoreHeight = heightRatio / HEIGHT_RATIO_HYVA_MAX;
+  let scoreHeight = heightRatio / HEIGHT_RATIO_HYVA_MAX;
+  // Ks. NO_RED_BELOW_HEIGHT_M yllä: pieni aalto ei saa näyttää punaista pelkän lyhyen
+  // jakson takia - tämä koskee vain tätä osatekijää, ei jyrkkyyttä eikä tuulta.
+  if (heightM < NO_RED_BELOW_HEIGHT_M){
+    scoreHeight = Math.min(scoreHeight, HEIGHT_SCORE_CAP_WHEN_SMALL);
+  }
 
   let scoreSteepness = 0;
   if (periodS != null && !isNaN(periodS) && periodS > 0){
