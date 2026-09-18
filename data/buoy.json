@@ -1,21 +1,13 @@
 {
-  "generated_at": "2026-09-18T18:30:37.459139+03:00",
+  "generated_at": "2026-09-18T18:45:27.780633+03:00",
   "stations": {
     "avomeri": {
       "label": "Suomenlahti (avomeri)",
       "lat": 59.973,
       "lon": 25.602,
       "status": "ok",
-      "fetched_at": "2026-09-18T18:30:37.459139+03:00",
+      "fetched_at": "2026-09-18T18:45:27.780633+03:00",
       "observations": [
-        {
-          "time": "2026-09-18T10:00:00+03:00",
-          "height_m": 1.5,
-          "period_s": 5.3,
-          "dir_compass": "WSW",
-          "dir_deg": 241,
-          "sea_temp_c": 15.7
-        },
         {
           "time": "2026-09-18T11:00:00+03:00",
           "height_m": 1.5,
@@ -70,6 +62,14 @@
           "period_s": 6.3,
           "dir_compass": "WSW",
           "dir_deg": 249,
+          "sea_temp_c": 15.7
+        },
+        {
+          "time": "2026-09-18T17:30:00+03:00",
+          "height_m": 1.7,
+          "period_s": 6.5,
+          "dir_compass": "WSW",
+          "dir_deg": 245,
           "sea_temp_c": 15.8
         }
       ]
@@ -79,16 +79,8 @@
       "lat": 60.1233,
       "lon": 24.9725,
       "status": "ok",
-      "fetched_at": "2026-09-18T18:30:37.459139+03:00",
+      "fetched_at": "2026-09-18T18:45:27.780633+03:00",
       "observations": [
-        {
-          "time": "2026-09-18T10:00:00+03:00",
-          "height_m": 0.8,
-          "period_s": 4.4,
-          "dir_compass": "SSW",
-          "dir_deg": 200,
-          "sea_temp_c": 14.7
-        },
         {
           "time": "2026-09-18T11:00:00+03:00",
           "height_m": 0.8,
@@ -141,6 +133,14 @@
           "time": "2026-09-18T17:00:00+03:00",
           "height_m": 0.9,
           "period_s": 4.7,
+          "dir_compass": "S",
+          "dir_deg": 183,
+          "sea_temp_c": 14.7
+        },
+        {
+          "time": "2026-09-18T17:30:00+03:00",
+          "height_m": 0.8,
+          "period_s": 4.6,
           "dir_compass": "S",
           "dir_deg": 183,
           "sea_temp_c": 14.6
