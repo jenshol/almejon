@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-09-23T22:00:47.509746+03:00",
+  "generated_at": "2026-09-23T22:15:29.505754+03:00",
   "stations": {
     "avomeri": {
       "label": "Suomenlahti (avomeri)",
       "lat": 59.973,
       "lon": 25.602,
       "status": "ok",
-      "fetched_at": "2026-09-23T22:00:47.509746+03:00",
+      "fetched_at": "2026-09-23T22:15:29.505754+03:00",
       "observations": [
         {
           "time": "2026-09-23T14:00:00+03:00",
@@ -14,7 +14,7 @@
           "period_s": 5.9,
           "dir_compass": "E",
           "dir_deg": 83,
-          "sea_temp_c": 15.2
+          "sea_temp_c": 15.3
         },
         {
           "time": "2026-09-23T15:00:00+03:00",
@@ -46,7 +46,7 @@
           "period_s": 5.0,
           "dir_compass": "E",
           "dir_deg": 84,
-          "sea_temp_c": 15.3
+          "sea_temp_c": 15.4
         },
         {
           "time": "2026-09-23T19:00:00+03:00",
@@ -54,7 +54,7 @@
           "period_s": 5.6,
           "dir_compass": "E",
           "dir_deg": 81,
-          "sea_temp_c": 15.4
+          "sea_temp_c": 15.3
         },
         {
           "time": "2026-09-23T20:00:00+03:00",
@@ -62,14 +62,14 @@
           "period_s": 4.4,
           "dir_compass": "ENE",
           "dir_deg": 77,
-          "sea_temp_c": 15.3
+          "sea_temp_c": 15.4
         },
         {
-          "time": "2026-09-23T20:30:00+03:00",
-          "height_m": 0.6,
-          "period_s": 4.9,
-          "dir_compass": "E",
-          "dir_deg": 80,
+          "time": "2026-09-23T21:00:00+03:00",
+          "height_m": 0.5,
+          "period_s": 4.7,
+          "dir_compass": "ENE",
+          "dir_deg": 73,
           "sea_temp_c": 15.4
         }
       ]
@@ -79,7 +79,7 @@
       "lat": 60.1233,
       "lon": 24.9725,
       "status": "ok",
-      "fetched_at": "2026-09-23T22:00:47.509746+03:00",
+      "fetched_at": "2026-09-23T22:15:29.505754+03:00",
       "observations": [
         {
           "time": "2026-09-23T14:00:00+03:00",
@@ -138,11 +138,11 @@
           "sea_temp_c": 13.1
         },
         {
-          "time": "2026-09-23T20:30:00+03:00",
+          "time": "2026-09-23T21:00:00+03:00",
           "height_m": 0.2,
-          "period_s": 4.4,
-          "dir_compass": "ESE",
-          "dir_deg": 109,
+          "period_s": 6.1,
+          "dir_compass": "SSW",
+          "dir_deg": 194,
           "sea_temp_c": 13.3
         }
       ]
