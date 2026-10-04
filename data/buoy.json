@@ -1,21 +1,13 @@
 {
-  "generated_at": "2026-10-05T01:30:34.163067+03:00",
+  "generated_at": "2026-10-05T01:45:25.761757+03:00",
   "stations": {
     "avomeri": {
       "label": "Suomenlahti (avomeri)",
       "lat": 59.973,
       "lon": 25.602,
       "status": "ok",
-      "fetched_at": "2026-10-05T01:30:34.163067+03:00",
+      "fetched_at": "2026-10-05T01:45:25.761757+03:00",
       "observations": [
-        {
-          "time": "2026-10-04T17:00:00+03:00",
-          "height_m": 1.2,
-          "period_s": 5.4,
-          "dir_compass": "WSW",
-          "dir_deg": 249,
-          "sea_temp_c": 13.9
-        },
         {
           "time": "2026-10-04T18:00:00+03:00",
           "height_m": 1.2,
@@ -71,6 +63,14 @@
           "dir_compass": "WSW",
           "dir_deg": 252,
           "sea_temp_c": 13.9
+        },
+        {
+          "time": "2026-10-05T00:30:00+03:00",
+          "height_m": 1.0,
+          "period_s": 5.9,
+          "dir_compass": "WSW",
+          "dir_deg": 251,
+          "sea_temp_c": 13.9
         }
       ]
     },
@@ -79,16 +79,8 @@
       "lat": 60.1233,
       "lon": 24.9725,
       "status": "ok",
-      "fetched_at": "2026-10-05T01:30:34.163067+03:00",
+      "fetched_at": "2026-10-05T01:45:25.761757+03:00",
       "observations": [
-        {
-          "time": "2026-10-04T17:00:00+03:00",
-          "height_m": 0.5,
-          "period_s": 3.9,
-          "dir_compass": "SSW",
-          "dir_deg": 206,
-          "sea_temp_c": 13.4
-        },
         {
           "time": "2026-10-04T18:00:00+03:00",
           "height_m": 0.5,
@@ -103,7 +95,7 @@
           "period_s": 3.9,
           "dir_compass": "SSW",
           "dir_deg": 196,
-          "sea_temp_c": 13.5
+          "sea_temp_c": 13.4
         },
         {
           "time": "2026-10-04T20:00:00+03:00",
@@ -111,7 +103,7 @@
           "period_s": 4.9,
           "dir_compass": "SSW",
           "dir_deg": 196,
-          "sea_temp_c": 13.5
+          "sea_temp_c": 13.4
         },
         {
           "time": "2026-10-04T21:00:00+03:00",
@@ -143,6 +135,14 @@
           "period_s": 3.5,
           "dir_compass": "SSW",
           "dir_deg": 199,
+          "sea_temp_c": 13.4
+        },
+        {
+          "time": "2026-10-05T00:30:00+03:00",
+          "height_m": 0.3,
+          "period_s": 3.1,
+          "dir_compass": "SSW",
+          "dir_deg": 210,
           "sea_temp_c": 13.4
         }
       ]
