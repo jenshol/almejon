@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-10-06T04:45:26.481519+03:00",
+  "generated_at": "2026-10-06T05:15:26.264382+03:00",
   "stations": {
     "avomeri": {
       "label": "Suomenlahti (avomeri)",
       "lat": 59.973,
       "lon": 25.602,
       "status": "ok",
-      "fetched_at": "2026-10-06T04:45:26.481519+03:00",
+      "fetched_at": "2026-10-06T05:15:26.264382+03:00",
       "observations": [
         {
           "time": "2026-10-05T21:00:00+03:00",
@@ -14,7 +14,7 @@
           "period_s": 7.7,
           "dir_compass": "WSW",
           "dir_deg": 250,
-          "sea_temp_c": 14.2
+          "sea_temp_c": 14.3
         },
         {
           "time": "2026-10-05T22:00:00+03:00",
@@ -30,7 +30,7 @@
           "period_s": 5.7,
           "dir_compass": "WSW",
           "dir_deg": 248,
-          "sea_temp_c": 14.3
+          "sea_temp_c": 14.4
         },
         {
           "time": "2026-10-06T00:00:00+03:00",
@@ -65,12 +65,12 @@
           "sea_temp_c": 14.4
         },
         {
-          "time": "2026-10-06T03:30:00+03:00",
-          "height_m": 2.6,
-          "period_s": 8.3,
+          "time": "2026-10-06T04:00:00+03:00",
+          "height_m": 2.9,
+          "period_s": 8.0,
           "dir_compass": "WSW",
-          "dir_deg": 250,
-          "sea_temp_c": 14.4
+          "dir_deg": 251,
+          "sea_temp_c": 14.5
         }
       ]
     },
@@ -79,7 +79,7 @@
       "lat": 60.1233,
       "lon": 24.9725,
       "status": "ok",
-      "fetched_at": "2026-10-06T04:45:26.481519+03:00",
+      "fetched_at": "2026-10-06T05:15:26.264382+03:00",
       "observations": [
         {
           "time": "2026-10-05T21:00:00+03:00",
@@ -138,12 +138,12 @@
           "sea_temp_c": 13.4
         },
         {
-          "time": "2026-10-06T03:30:00+03:00",
-          "height_m": 0.9,
-          "period_s": 4.4,
+          "time": "2026-10-06T04:00:00+03:00",
+          "height_m": 1.0,
+          "period_s": 4.9,
           "dir_compass": "SSW",
-          "dir_deg": 193,
-          "sea_temp_c": 13.6
+          "dir_deg": 192,
+          "sea_temp_c": 13.7
         }
       ]
     }
