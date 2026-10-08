@@ -1,21 +1,13 @@
 {
-  "generated_at": "2026-10-08T12:30:37.714135+03:00",
+  "generated_at": "2026-10-08T12:45:30.332201+03:00",
   "stations": {
     "avomeri": {
       "label": "Suomenlahti (avomeri)",
       "lat": 59.973,
       "lon": 25.602,
       "status": "ok",
-      "fetched_at": "2026-10-08T12:30:37.714135+03:00",
+      "fetched_at": "2026-10-08T12:45:30.332201+03:00",
       "observations": [
-        {
-          "time": "2026-10-08T04:00:00+03:00",
-          "height_m": 0.6,
-          "period_s": 6.3,
-          "dir_compass": "WSW",
-          "dir_deg": 251,
-          "sea_temp_c": 14.1
-        },
         {
           "time": "2026-10-08T05:00:00+03:00",
           "height_m": 0.5,
@@ -70,6 +62,14 @@
           "period_s": 3.1,
           "dir_compass": "SSE",
           "dir_deg": 168,
+          "sea_temp_c": 14.1
+        },
+        {
+          "time": "2026-10-08T11:30:00+03:00",
+          "height_m": 0.5,
+          "period_s": 3.1,
+          "dir_compass": "SSE",
+          "dir_deg": 167,
           "sea_temp_c": 14.0
         }
       ]
@@ -79,16 +79,8 @@
       "lat": 60.1233,
       "lon": 24.9725,
       "status": "ok",
-      "fetched_at": "2026-10-08T12:30:37.714135+03:00",
+      "fetched_at": "2026-10-08T12:45:30.332201+03:00",
       "observations": [
-        {
-          "time": "2026-10-08T04:00:00+03:00",
-          "height_m": 0.2,
-          "period_s": 5.9,
-          "dir_compass": "S",
-          "dir_deg": 181,
-          "sea_temp_c": 13.2
-        },
         {
           "time": "2026-10-08T05:00:00+03:00",
           "height_m": 0.2,
@@ -143,6 +135,14 @@
           "period_s": 2.5,
           "dir_compass": "S",
           "dir_deg": 175,
+          "sea_temp_c": 13.2
+        },
+        {
+          "time": "2026-10-08T11:30:00+03:00",
+          "height_m": 0.4,
+          "period_s": 3.0,
+          "dir_compass": "S",
+          "dir_deg": 178,
           "sea_temp_c": 13.0
         }
       ]
