@@ -1,21 +1,13 @@
 {
-  "generated_at": "2026-11-04T00:30:40.113290+03:00",
+  "generated_at": "2026-11-04T00:45:32.862246+03:00",
   "stations": {
     "avomeri": {
       "label": "Suomenlahti (avomeri)",
       "lat": 59.973,
       "lon": 25.602,
       "status": "ok",
-      "fetched_at": "2026-11-04T00:30:40.113290+03:00",
+      "fetched_at": "2026-11-04T00:45:32.862246+03:00",
       "observations": [
-        {
-          "time": "2026-11-03T15:00:00+03:00",
-          "height_m": 1.0,
-          "period_s": 3.9,
-          "dir_compass": "WNW",
-          "dir_deg": 284,
-          "sea_temp_c": 11.4
-        },
         {
           "time": "2026-11-03T16:00:00+03:00",
           "height_m": 0.9,
@@ -70,7 +62,15 @@
           "period_s": 4.0,
           "dir_compass": "NW",
           "dir_deg": 320,
-          "sea_temp_c": 11.2
+          "sea_temp_c": 11.4
+        },
+        {
+          "time": "2026-11-03T22:30:00+03:00",
+          "height_m": 1.1,
+          "period_s": 3.9,
+          "dir_compass": "NNW",
+          "dir_deg": 333,
+          "sea_temp_c": 11.1
         }
       ]
     },
@@ -79,16 +79,8 @@
       "lat": 60.1233,
       "lon": 24.9725,
       "status": "ok",
-      "fetched_at": "2026-11-04T00:30:40.113290+03:00",
+      "fetched_at": "2026-11-04T00:45:32.862246+03:00",
       "observations": [
-        {
-          "time": "2026-11-03T15:00:00+03:00",
-          "height_m": 0.3,
-          "period_s": 2.0,
-          "dir_compass": "NW",
-          "dir_deg": 313,
-          "sea_temp_c": 10.3
-        },
         {
           "time": "2026-11-03T16:00:00+03:00",
           "height_m": 0.3,
@@ -143,7 +135,15 @@
           "period_s": 2.0,
           "dir_compass": "NNW",
           "dir_deg": 327,
-          "sea_temp_c": 10.2
+          "sea_temp_c": 10.3
+        },
+        {
+          "time": "2026-11-03T22:30:00+03:00",
+          "height_m": 0.3,
+          "period_s": 2.0,
+          "dir_compass": "NW",
+          "dir_deg": 322,
+          "sea_temp_c": 10.1
         }
       ]
     }
